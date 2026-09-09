@@ -1,8 +1,8 @@
 # Publishes a Maven library snapshot to Forgejo's own package registry on every push. Copied from
 # BSToolbox-BLE's own copy of this workflow (itself adapted from SYS/devenv's samples/
-# maven-snapshot-deploy.yml). This repo's default branch is `master`, matching every other
-# Bliksoft-public library - adjust the trigger below if that turns out not to be the case once the
-# repo is actually created.
+# maven-snapshot-deploy.yml). This repo's default branch is `main`, not `master` like most of the
+# other Bliksoft-public libraries - confirmed once the repo was actually created and cloned to
+# Forgejo, per the note this comment used to carry.
 #
 # This file lives on GitHub (the real source of truth, which Forgejo pull-mirrors) rather than
 # being pushed directly to the Forgejo side - a commit made only on the Forgejo side of a pull
@@ -10,7 +10,7 @@
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
