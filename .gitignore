@@ -1,0 +1,8 @@
+# Maven
+target/
+.flattened-pom.xml
+
+# Common editor/OS noise
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,85 @@
+# BSHmiDriver
+
+Generic Java PC-side client for a wire protocol that remote-controls small e-paper/LCD HMI
+displays — image transfer, local drawing primitives, storage, GPIO, OTA, power management — over
+WiFi/TCP, Bluetooth Low Energy, or Serial. Not tied to any specific device.
+
+## Why a generic protocol client
+
+Most small HMI display projects hard-code their PC-side communication layer to one specific board.
+This library instead implements a fully specified, versionable wire protocol (frame envelope, TLV
+capability negotiation, a ~50-command catalog covering image transfer, drawing primitives, storage,
+GPIO, OTA, and power management), so any device that speaks it — today, the CrowPanel 4.2" e-paper
+display via the sibling `firmware-BSHMIEinkDevice` firmware — can be driven from the same Java
+client, over whichever transport is available (Serial, TCP, or BLE), through the same typed API.
+
+The protocol spec itself (`doc/PROTOCOL.md`) lives in the `firmware-BSHMIEinkDevice` repository —
+the main published asset it belongs alongside — not here. This library and the firmware are
+independent implementations of that one spec, kept in lockstep by convention.
+
+## Transports
+
+- `SerialFrameTransport` — UART, via `jSerialComm` (provided dependency).
+- `TcpFrameTransport` — WiFi/TCP, raw sockets.
+- `BleFrameTransport` — Bluetooth Low Energy, built on the sibling `BSToolbox-BLE` library
+  (provided dependency, not required unless you use BLE).
+- `FileFrameTransport` — writes commands to a `.macro` file instead of a live device; used by
+  `Cli`'s file-output mode and for hand-authoring macros.
+
+## Modules
+
+- **Frame envelope** (`Frame`, `Crc16`, `RlePackBits`) — the wire format itself.
+- **`CommandClient`** — SEQ assignment, ACK/NACK-vs-direct-response correlation, timeout+retry, an
+  event-listener hook for unsolicited `BUTTON_EVENT`/`GPIO_EVENT`/`LOG_MESSAGE` frames.
+- **`CommandSchema`** — a declarative, single-source-of-truth field layout for every command
+  (covering the full ~50-command catalog), driving `PayloadCodec` (byte[] ↔ field map),
+  `TextCommandFormat` (bidirectional textual notation), and `HmiDevice`'s typed methods, so none of
+  these duplicate the wire layout by hand.
+- **`HmiDevice`** and its transport-specific subclasses (`SerialHmiDevice`/`TcpHmiDevice`/
+  `BleHmiDevice`/`FileHmiDevice`) — a high-level, typed API (one method per command), never
+  referencing a transport's own dependency directly so a consumer only pulls in what it uses.
+- **`Cli`** — a command-line front end: `-t`/`-a` transport selection, `-f`/`-c`/`-p` (file/inline/
+  piped commands, order-preserving), a plaintext command notation (`NAME|field|field|...`,
+  escaping, `@file` for raw-byte fields), and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`) via
+  `ScriptRunner`.
+
+## Usage
+
+```java
+try (SerialHmiDevice device = new SerialHmiDevice("COM5")) {
+    device.connect();
+    device.fastClear(Color.WHITE, 0);
+    device.drawRect(10, 10, 100, 60, Color.BLACK, DrawMode.REPLACE, true, 2, WriteFlags.REFRESH_NOW);
+}
+```
+
+Or via the CLI:
+
+```bash
+java -jar bshmidriver.jar -t serial -a COM5 \
+    -c "FAST_CLEAR|WHITE|0" -c "DRAW_RECT|10|10|100|60|BLACK|REPLACE|true|2|REFRESH_NOW"
+```
+
+## Building
+
+```bash
+mvn test
+```
+
+`jSerialComm`, `common-java-utils-ble` (BSToolbox-BLE), and `picocli` are all `provided` — only
+pull in the one(s) you actually use, on your own consuming application's classpath.
+`common-java-utils-ble` isn't on Maven Central yet; install it locally first
+(`cd BSToolbox-BLE && mvn install`).
+
+## Status
+
+Verified end-to-end on real hardware against the CrowPanel 4.2" e-paper display: all three
+transports (Serial, WiFi/TCP, BLE) live and independently functional simultaneously on one firmware
+image; the full drawing/storage/GPIO/OTA/power-management/macro command surface exercised via
+dozens of manual real-hardware check tools; the high-level `HmiDevice`/`Cli` layer confirmed against
+real device responses over Serial. See the `firmware-BSHMIEinkDevice` repository's
+`doc/PROTOCOL.md` §22 for the complete, per-feature verification history.
+
+## License
+
+LGPL-2.1-or-later, see `LICENSE`.

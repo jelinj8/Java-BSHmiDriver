@@ -1,0 +1,217 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>cz.bliksoft.hmieink</groupId>
+	<artifactId>bshmidriver</artifactId>
+	<version>${revision}</version>
+
+	<name>BSHmiDriver</name>
+	<description>Java PC-side client for a generic wire protocol (image transfer, drawing, storage,
+		GPIO, OTA, power management) to remote-control small e-paper/LCD HMI displays over WiFi/TCP,
+		BLE, and Serial - not tied to any one device. Originally developed against the CrowPanel
+		4.2" e-paper display; see doc/PROTOCOL.md in the firmware-BSHMIEinkDevice repository for the
+		full wire protocol specification this implements.</description>
+	<url>https://github.com/jelinj8/Java-BSHmiDriver</url>
+
+	<licenses>
+		<license>
+			<name>GNU Lesser General Public License v2.1</name>
+			<url>https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>jelinj8</id>
+			<name>Jakub Jelínek</name>
+			<email>jakub.jelinek@gmail.com</email>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:https://github.com/jelinj8/Java-BSHmiDriver.git</connection>
+		<developerConnection>scm:git:https://github.com/jelinj8/Java-BSHmiDriver.git</developerConnection>
+		<url>https://github.com/jelinj8/Java-BSHmiDriver</url>
+	</scm>
+
+	<properties>
+		<revision>0.1.0-SNAPSHOT</revision>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.release>8</maven.compiler.release>
+		<junit.version>5.10.2</junit.version>
+		<jserialcomm.version>2.11.4</jserialcomm.version>
+		<bstoolbox-ble.version>0.3.0-SNAPSHOT</bstoolbox-ble.version>
+		<bstoolbox.version>0.8-SNAPSHOT</bstoolbox.version>
+		<picocli.version>4.7.6</picocli.version>
+	</properties>
+
+	<dependencies>
+		<!-- Serial (UART) transport, doc/PROTOCOL.md §3.3 / §14. "provided": like BSToolbox-BLE
+			for the BLE transport, this library is meant to stay usable without pulling in a
+			transport it doesn't need - the consuming application supplies jSerialComm on its own
+			runtime classpath only if it actually uses SerialTransport. -->
+		<dependency>
+			<groupId>com.fazecast</groupId>
+			<artifactId>jSerialComm</artifactId>
+			<version>${jserialcomm.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- BLE transport, doc/PROTOCOL.md §3.1 / §19. "provided" per the project brief (CLAUDE.md):
+			the consuming application supplies this sibling library on its own runtime classpath
+			only if it actually uses BleFrameTransport. Not on Maven Central - install it locally
+			first: `cd BSToolbox-BLE && mvn install` (or the deploy-maven-local skill). -->
+		<dependency>
+			<groupId>cz.bliksoft.java</groupId>
+			<artifactId>common-java-utils-ble</artifactId>
+			<version>${bstoolbox-ble.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- Cli's -t/-a validation and help text only, not the CLI's own -f/-c/-p/-s interleaving
+			(picocli collapses repeated-option values by option, losing the encounter order across
+			different options, which that interleaving requires - handled by a manual scan of
+			args[] instead). "provided": only a consumer that runs Cli needs this on the runtime
+			classpath, same reasoning as jSerialComm/BSToolbox-BLE above. -->
+		<dependency>
+			<groupId>info.picocli</groupId>
+			<artifactId>picocli</artifactId>
+			<version>${picocli.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- General-purpose image/pixel utilities (cz.bliksoft.hmieink.protocol.font's glyph generator
+			rasterizes TTF fonts via plain java.awt.Font/Graphics2D itself - BSToolbox's own IconSpec
+			engine is a UI icon-compositing/theming DSL, not a font rasterizer, and has no TTF-loading
+			or 1bpp-thresholding support - but its PixelOps ARGB helpers and any future graphics-asset
+			tooling for firmware-BSHMIEinkDevice-resources are a reasonable fit). "provided": only a
+			consumer that actually uses this needs it on the runtime classpath, same reasoning as
+			jSerialComm/BSToolbox-BLE/picocli above. Already installed locally (`cd BSToolbox && mvn
+			install`, or the deploy-maven-local skill, if not). -->
+		<dependency>
+			<groupId>cz.bliksoft.java</groupId>
+			<artifactId>common-java-utils</artifactId>
+			<version>${bstoolbox.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
+				<configuration>
+					<release>${maven.compiler.release}</release>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version>
+			</plugin>
+
+			<!-- resolve ${revision} in published POM -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.6.0</version>
+				<configuration>
+					<updatePomFile>true</updatePomFile>
+					<flattenMode>resolveCiFriendliesOnly</flattenMode>
+				</configuration>
+				<executions>
+					<execution>
+						<id>flatten</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>flatten</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>flatten.clean</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.3.1</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.11.2</version>
+						<configuration>
+							<additionalJOptions>
+								<additionalJOption>-Xdoclint:-missing</additionalJOption>
+							</additionalJOptions>
+						</configuration>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>3.2.7</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.7.0</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>true</autoPublish>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>
