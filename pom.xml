@@ -61,8 +61,10 @@
 
 		<!-- BLE transport, doc/PROTOCOL.md §3.1 / §19. "provided" per the project brief (CLAUDE.md):
 			the consuming application supplies this sibling library on its own runtime classpath
-			only if it actually uses BleFrameTransport. Not on Maven Central - install it locally
-			first: `cd BSToolbox-BLE && mvn install` (or the deploy-maven-local skill). -->
+			only if it actually uses BleFrameTransport. Pinned to 0.3.0-SNAPSHOT (not the published
+			0.2.0) while BSToolbox-BLE's Windows scan-response name fix is still unreleased - install
+			it locally first: `cd BSToolbox-BLE && mvn install` (or the deploy-maven-local skill).
+			Move back to a published release once that fix ships. -->
 		<dependency>
 			<groupId>cz.bliksoft.java</groupId>
 			<artifactId>common-java-utils-ble</artifactId>

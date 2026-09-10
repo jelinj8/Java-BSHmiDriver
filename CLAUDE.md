@@ -73,8 +73,8 @@ Three dependencies are deliberately `provided`, not required, so a consumer only
 actually uses:
 - `com.fazecast:jSerialComm` — only needed for `SerialFrameTransport`.
 - `cz.bliksoft.java:common-java-utils-ble` (BSToolbox-BLE) — only needed for `BleFrameTransport`.
-  Not on Maven Central yet; install it locally first (`cd BSToolbox-BLE && mvn install`, or the
-  `deploy-maven-local` skill).
+  On Maven Central as of 0.2.0, but currently pinned to a local `0.3.0-SNAPSHOT` install (see the
+  dependency's comment in `pom.xml`) while a Windows scan-response name fix there is unreleased.
 - `info.picocli:picocli` — only needed to run the `Cli` class.
 
 ## CLI distribution
