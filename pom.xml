@@ -121,6 +121,24 @@
 				<version>3.2.5</version>
 			</plugin>
 
+			<!-- Main-Class manifest entry for the CLI jar. No Class-Path/addClasspath here: that feature
+				only walks maven-jar-plugin's compile/runtime/system classpath and silently omits
+				provided-scope deps, which jSerialComm/BSToolbox-BLE/picocli/jackson all deliberately are
+				(this is a library, not an application). The "dist" profile's launch scripts build the
+				runtime classpath themselves instead (bshmidriver-cli.jar + lib/*). -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.4.2</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>cz.bliksoft.hmieink.protocol.cli.Cli</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+
 			<!-- resolve ${revision} in published POM -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
@@ -209,6 +227,62 @@
 							<publishingServerId>central</publishingServerId>
 							<autoPublish>true</autoPublish>
 						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!-- Off by default - does not affect `mvn install`/`mvn deploy`, the `release` profile, or
+			.forgejo/workflows/maven-snapshot-deploy.yml, which keep publishing the library jar exactly
+			as before. Build the CLI distribution on request with `mvn package -Pdist`. -->
+		<profile>
+			<id>dist</id>
+			<build>
+				<plugins>
+					<!-- bundle the CLI's provided-scope runtime deps (jSerialComm, BSToolbox-BLE,
+						picocli, and their transitives) into target/dist/lib - excludes common-java-utils,
+						which only GenerateDeviceFonts (not Cli) needs. -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<version>3.6.1</version>
+						<executions>
+							<execution>
+								<id>copy-cli-dist-deps</id>
+								<phase>package</phase>
+								<goals>
+									<goal>copy-dependencies</goal>
+								</goals>
+								<configuration>
+									<includeScope>compile</includeScope>
+									<excludeArtifactIds>common-java-utils</excludeArtifactIds>
+									<outputDirectory>${project.build.directory}/dist/lib</outputDirectory>
+									<excludeTypes>pom</excludeTypes>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
+					<!-- assemble the distributable dir + zip: bshmidriver-cli.jar + lib/ + launch scripts -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<version>3.7.1</version>
+						<executions>
+							<execution>
+								<id>make-cli-dist</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+								<configuration>
+									<appendAssemblyId>false</appendAssemblyId>
+									<descriptors>
+										<descriptor>src/assembly/cli-dist.xml</descriptor>
+									</descriptors>
+								</configuration>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>

@@ -77,6 +77,25 @@ actually uses:
   `deploy-maven-local` skill).
 - `info.picocli:picocli` — only needed to run the `Cli` class.
 
+## CLI distribution
+
+`mvn package -Pdist` builds a standalone, runnable distribution of the `Cli` tool — the `dist`
+profile is off by default so it has zero effect on `mvn install`/`mvn deploy` or the `release`
+profile. Output: `target/bshmidriver-<version>/` (also zipped as `target/bshmidriver-<version>.zip`),
+containing:
+- `bshmidriver-cli.jar` — the library jar with a `Main-Class` manifest entry (`Cli`)
+- `lib/` — the CLI's provided-scope runtime deps: jSerialComm, BSToolbox-BLE (+ its jackson
+  transitives), picocli. Deliberately **not** `common-java-utils` — that's only used by the
+  font-generator's `GenerateDeviceFonts` manual tool, not `Cli`.
+- `hmi-cli.sh` / `hmi-cli.bat` — self-locating launch scripts (`java -cp <dir>/bshmidriver-cli.jar;<dir>/lib/*
+  cz.bliksoft.hmieink.protocol.cli.Cli "$@"`); pass all CLI args through unchanged. Note: no
+  manifest `Class-Path`/`addClasspath` is used here — that maven-jar-plugin feature silently omits
+  `provided`-scope deps, which all three of the above are.
+
+Release process (manual, no CI — mirrors `BSMeshcoreCompanion`'s own release pattern, which has no
+`.github/workflows/` either): build locally with `mvn package -Pdist`, then
+`gh release create vX.Y.Z target/bshmidriver-*.zip` with release notes.
+
 ## Release process
 
 Use the `prepare-maven-release` / `deploy-maven-release` / `deploy-maven-local` skills for
