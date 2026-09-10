@@ -9,6 +9,10 @@ import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.HandshakeCapabilities;
 import cz.bliksoft.javautils.ble.BleAdapter;
+import cz.bliksoft.javautils.ble.BleException;
+import cz.bliksoft.javautils.ble.BlePeripheral;
+import cz.bliksoft.javautils.ble.ConnectionParameterPreset;
+import cz.bliksoft.javautils.ble.ConnectionParameters;
 import cz.bliksoft.javautils.ble.ScanFilter;
 
 /**
@@ -40,6 +44,12 @@ public final class BleHandshakeManualCheck {
 		AtomicReference<String> nameRef = new AtomicReference<>();
 
 		try (BleAdapter adapter = new BleAdapter()) {
+			try {
+				System.out.println("Adapter state: " + adapter.getAdapterState());
+			} catch (BleException e) {
+				System.out.println("Adapter state query failed/unsupported: " + e.getMessage());
+			}
+
 			System.out.println("Scanning for service " + Ble.SERVICE_UUID + " (up to " + SCAN_TIMEOUT_MS + " ms)...");
 			adapter.scan(new ScanFilter().withServiceUuid(Ble.SERVICE_UUID), SCAN_TIMEOUT_MS, (address, name, rssi) -> {
 				if (addressRef.compareAndSet(null, address)) {
@@ -61,6 +71,33 @@ public final class BleHandshakeManualCheck {
 			CommandClient client = new CommandClient(new BleFrameTransport(adapter, address));
 			client.connect();
 			System.out.println("Connected.");
+
+			// Same cached BlePeripheral instance BleFrameTransport connected above (per-address
+			// cache on BleAdapter) - exercises the connection-quality/diagnostic API surface
+			// (getMtu/readRssi/getConnectionParameters/requestConnectionParameters) against real
+			// hardware.
+			BlePeripheral peripheral = adapter.getPeripheral(address);
+			try {
+				System.out.println("MTU: " + peripheral.getMtu() + " bytes");
+			} catch (BleException e) {
+				System.out.println("MTU query failed/unsupported: " + e.getMessage());
+			}
+			try {
+				System.out.println("RSSI: " + peripheral.readRssi() + " dBm");
+			} catch (BleException e) {
+				System.out.println("RSSI query failed/unsupported: " + e.getMessage());
+			}
+			try {
+				ConnectionParameters before = peripheral.getConnectionParameters();
+				System.out.println("Connection parameters: " + (before != null ? before : "not exposed on this platform"));
+				peripheral.requestConnectionParameters(ConnectionParameterPreset.THROUGHPUT_OPTIMIZED);
+				ConnectionParameters after = peripheral.getConnectionParameters();
+				System.out.println("Connection parameters after THROUGHPUT_OPTIMIZED request: "
+						+ (after != null ? after : "not exposed on this platform"));
+			} catch (BleException e) {
+				System.out.println("Connection parameters query/request failed/unsupported: " + e.getMessage());
+			}
+
 			try {
 				System.out.println("-> sending HANDSHAKE_REQUEST");
 				// PIN_TYPE=NONE, PIN_LEN=0 (doc/PROTOCOL.md §5.3) - no pin offered.
