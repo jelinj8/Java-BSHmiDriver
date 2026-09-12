@@ -218,9 +218,12 @@ under a name:
 ICONSPEC|<name>|<spec>
 ```
 
-The cached image can then be referenced in subsequent commands as `#<name>` (e.g. as a
-`DRAW_IMAGE` payload) instead of an `@<filepath>` - `TextCommandFormat`'s `BYTES` field parsing
-resolves it directly from the in-memory cache, so it never touches disk.
+The cached image can then be referenced from any `BYTES` field as `#<name>` instead of an
+`@<filepath>` - `TextCommandFormat`'s field parsing resolves it directly from the in-memory cache,
+so it never touches disk. In practice that's `FILE_UPLOAD`'s `DATA` field: `DRAW_IMAGE` itself
+takes a device-storage `VOLUME`+`PATH` (doc/PROTOCOL.md §8), not raw bytes, so an `ICONSPEC`-
+generated image still has to be uploaded to a volume before a drawing command can reference its
+path.
 
 **Requires** the `cz.bliksoft.java:common-java-utils` dependency on the classpath (see
 [Classpath Requirements](#classpath-requirements) above) - without it, `ICONSPEC` fails with an
@@ -236,7 +239,8 @@ relative image paths against:
 **Example:**
 ```
 ICONSPEC|logo|<icon spec string>
-DRAW_IMAGE|0|0|#logo|REFRESH_NOW
+FILE_UPLOAD|SD|/logo.epi|#logo
+DRAW_IMAGE|10|10|REPLACE|REFRESH_NOW|SD|/logo.epi
 ```
 
 ## Full Command Catalog
