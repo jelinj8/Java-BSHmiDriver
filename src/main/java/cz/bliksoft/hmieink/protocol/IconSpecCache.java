@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
+import cz.bliksoft.javautils.images.ImageUtils;
 import cz.bliksoft.javautils.images.iconspec.IconSpecEngine;
 
 /**
@@ -75,7 +76,7 @@ public final class IconSpecCache {
 		if (img == null) {
 			throw new IllegalArgumentException("Failed to generate image from spec: " + spec);
 		}
-		boolean hasMask = EpiImageCodec.hasTransparency(img);
+		boolean hasMask = ImageUtils.hasTransparency(img);
 		byte[] epi = EpiImageCodec.encode(img, hasMask);
 		cache.put(name, epi);
 		return epi;

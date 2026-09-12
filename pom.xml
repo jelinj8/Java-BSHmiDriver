@@ -43,7 +43,7 @@
 		<junit.version>5.10.2</junit.version>
 		<jserialcomm.version>2.11.4</jserialcomm.version>
 		<bstoolbox-ble.version>0.4.0</bstoolbox-ble.version>
-		<bstoolbox.version>0.7</bstoolbox.version>
+		<bstoolbox.version>0.8</bstoolbox.version>
 		<picocli.version>4.7.6</picocli.version>
 	</properties>
 
@@ -90,8 +90,9 @@
 			GenerateDeviceFonts manual tool uses it too. "provided": only a consumer that actually uses
 			ICONSPEC or GenerateDeviceFonts needs it on the runtime classpath, same reasoning as
 			jSerialComm/BSToolbox-BLE/picocli above - IconSpecCache.isAvailable() checks for it at
-			runtime so Cli itself still runs without it. Already installed locally (`cd BSToolbox && mvn
-			install`, or the deploy-maven-local skill, if not). -->
+			runtime so Cli itself still runs without it. On Maven Central as of 0.8, which also dropped a
+			leaked, hard log4j-api dependency that used to make even a plain-raster ICONSPEC crash if
+			log4j-api wasn't separately on the classpath. -->
 		<dependency>
 			<groupId>cz.bliksoft.java</groupId>
 			<artifactId>common-java-utils</artifactId>

@@ -93,9 +93,7 @@ mvn test
 `jSerialComm`, `common-java-utils-ble` (BSToolbox-BLE), `picocli`, and `common-java-utils`
 (BSToolbox, needed for `Cli`'s `ICONSPEC` command and the `GenerateDeviceFonts` manual tool) are
 all `provided` — only pull in the one(s) you actually use, on your own consuming application's
-classpath. `common-java-utils-ble` is on Maven Central as of 0.3.0; `common-java-utils` isn't
-published yet, so install it locally first (`cd BSToolbox && mvn install`, or the
-`deploy-maven-local` skill).
+classpath. `common-java-utils-ble` is on Maven Central as of 0.3.0; `common-java-utils` as of 0.8.
 
 ## Release Packaging
 

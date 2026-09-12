@@ -167,25 +167,4 @@ public final class EpiImageCodec {
 		return (data[offset] & 0xFFL) | ((data[offset + 1] & 0xFFL) << 8) | ((data[offset + 2] & 0xFFL) << 16)
 				| ((data[offset + 3] & 0xFFL) << 24);
 	}
-
-	/**
-	 * Checks if the image has any transparent pixels (alpha &lt; 128).
-	 *
-	 * @param img the image to check
-	 * @return {@code true} if the image has transparent pixels
-	 */
-	public static boolean hasTransparency(BufferedImage img) {
-		int width = img.getWidth();
-		int height = img.getHeight();
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				int argb = img.getRGB(x, y);
-				int alpha = (argb >>> 24) & 0xFF;
-				if (alpha < 128) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
 }
