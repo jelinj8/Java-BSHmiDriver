@@ -20,7 +20,7 @@ The CLI jar is a library jar without embedded dependencies. You must supply tran
 | TCP | None (uses JDK only) | Built-in |
 | Serial | `com.fazecast:jSerialComm` | `provided` in POM |
 | BLE | `cz.bliksoft.java:common-java-utils-ble` (BSToolbox-BLE) | `provided` in POM |
-| Image/Font processing | `cz.bliksoft.java:common-java-utils` | `provided` in POM |
+| `ICONSPEC` command | `cz.bliksoft.java:common-java-utils` | `provided` in POM |
 
 **Note:** TCP connections work with just the CLI jar. All other transports and features require additional libraries.
 
@@ -206,6 +206,37 @@ SYNC|./glyphs|SD|/glyphs|PC_MASTER
 The sync manifest (tracking file content hashes for MERGE mode) is stored as a sibling file:
 ```
 <localDir-name>.bshmisync-manifest
+```
+
+### `ICONSPEC`
+
+Generates an image from an icon spec string, converts it to the device's binary B/W `.epi` format
+(with a transparency mask if the source image has any pixels with alpha below 128), and caches it
+under a name:
+
+```
+ICONSPEC|<name>|<spec>
+```
+
+The cached image can then be referenced in subsequent commands as `#<name>` (e.g. as a
+`DRAW_IMAGE` payload) instead of an `@<filepath>` - `TextCommandFormat`'s `BYTES` field parsing
+resolves it directly from the in-memory cache, so it never touches disk.
+
+**Requires** the `cz.bliksoft.java:common-java-utils` dependency on the classpath (see
+[Classpath Requirements](#classpath-requirements) above) - without it, `ICONSPEC` fails with an
+`IOException` explaining what's missing, but the rest of the script/CLI still runs fine.
+
+Use `-i` / `--image-root` to set the root directory (or classpath root) icon specs resolve
+relative image paths against:
+
+```bash
+./hmi-cli.sh -t serial -a COM5 -i ./branding-images -f draw.macro
+```
+
+**Example:**
+```
+ICONSPEC|logo|<icon spec string>
+DRAW_IMAGE|0|0|#logo|REFRESH_NOW
 ```
 
 ## Full Command Catalog

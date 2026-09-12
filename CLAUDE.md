@@ -32,7 +32,9 @@ were deliberately left alone, to avoid an unnecessary breaking rename):
   `NAME|field|field|...` textual command notation, schema-driven).
 - `cz.bliksoft.hmieink.protocol.cli` — `Cli`, the command-line front end.
 - `cz.bliksoft.hmieink.protocol.script` — `ScriptRunner`, the shared engine behind the CLI's
-  `-f`/`-c`/`-p` flags and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`, `SYNC`).
+  `-f`/`-c`/`-p` flags and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`, `SYNC`, `ICONSPEC`).
+  `ScriptRunner` uses `IconSpecCache` for icon spec processing, which requires the
+  `common-java-utils` library.
 - `cz.bliksoft.hmieink.protocol.sync` — `FolderSync`, recursive local-folder-vs-device-storage
   sync (PC-master/device-master/merge modes, all three volumes) built entirely on existing FILE_*
   commands - no protocol changes of its own. `RemoteFileStore` decouples the sync algorithm from
@@ -69,12 +71,16 @@ isn't on the default classpath — supply its jar explicitly as shown above.
 
 ## Provided dependencies
 
-Three dependencies are deliberately `provided`, not required, so a consumer only pulls in what it
+Four dependencies are deliberately `provided`, not required, so a consumer only pulls in what it
 actually uses:
 - `com.fazecast:jSerialComm` — only needed for `SerialFrameTransport`.
 - `cz.bliksoft.java:common-java-utils-ble` (BSToolbox-BLE) — only needed for `BleFrameTransport`.
   On Maven Central as of 0.3.0.
 - `info.picocli:picocli` — only needed to run the `Cli` class.
+- `cz.bliksoft.java:common-java-utils` (BSToolbox) — only needed for the font-generator's
+  `GenerateDeviceFonts` manual tool, and (via `IconSpecCache`) for `ScriptRunner`'s `ICONSPEC`
+  pseudo-command. `IconSpecCache.isAvailable()` checks for it at runtime and `ICONSPEC` throws a
+  clear `IOException` if it's missing, so `Cli` itself still runs without it.
 
 ## CLI distribution
 
@@ -84,8 +90,10 @@ profile. Output: `target/bshmidriver-<version>/` (also zipped as `target/bshmidr
 containing:
 - `bshmidriver-cli.jar` — the library jar with a `Main-Class` manifest entry (`Cli`)
 - `lib/` — the CLI's provided-scope runtime deps: jSerialComm, BSToolbox-BLE (+ its jackson
-  transitives), picocli. Deliberately **not** `common-java-utils` — that's only used by the
-  font-generator's `GenerateDeviceFonts` manual tool, not `Cli`.
+  transitives), picocli. Deliberately **not** `common-java-utils` — that's only needed for
+  `ICONSPEC` command support in scripts (icon spec processing via `IconSpecCache`). The
+  `common-java-utils` dependency also enables SVG processing and QR code generation for icon
+  specs, but these are optional features — consumers who don't use `ICONSPEC` don't need them.
 - `hmi-cli.sh` / `hmi-cli.bat` / `hmi-cli.command` — self-locating launch scripts (`java -cp <dir>/bshmidriver-cli.jar;<dir>/lib/*
   cz.bliksoft.hmieink.protocol.cli.Cli "$@"`); pass all CLI args through unchanged. Note: no
   manifest `Class-Path`/`addClasspath` is used here — that maven-jar-plugin feature silently omits

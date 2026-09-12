@@ -40,15 +40,15 @@ independent implementations of that one spec, kept in lockstep by convention.
   referencing a transport's own dependency directly so a consumer only pulls in what it uses.
 - **`Cli`** — a command-line front end: `-t`/`-a` transport selection, `-f`/`-c`/`-p` (file/inline/
   piped commands, order-preserving), a plaintext command notation (`NAME|field|field|...`,
-  escaping, `@file` for raw-byte fields), and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`) via
-  `ScriptRunner`.
+  escaping, `@file` for raw-byte fields), and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`,
+  `SYNC`, `ICONSPEC`) via `ScriptRunner`.
 
 ## Usage
 
 See `doc/cli.md` for comprehensive CLI documentation including:
 - Connection specification (TCP, Serial, BLE, File)
 - Command format and escaping rules
-- PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`, `SYNC`)
+- PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`, `SYNC`, `ICONSPEC`)
 - Full command catalog and examples
 
 ### Java API
@@ -90,10 +90,12 @@ See `doc/cli.md` for complete CLI documentation.
 mvn test
 ```
 
-`jSerialComm`, `common-java-utils-ble` (BSToolbox-BLE), and `picocli` are all `provided` — only
-pull in the one(s) you actually use, on your own consuming application's classpath.
-`common-java-utils-ble` isn't on Maven Central yet; install it locally first
-(`cd BSToolbox-BLE && mvn install`).
+`jSerialComm`, `common-java-utils-ble` (BSToolbox-BLE), `picocli`, and `common-java-utils`
+(BSToolbox, needed for `Cli`'s `ICONSPEC` command and the `GenerateDeviceFonts` manual tool) are
+all `provided` — only pull in the one(s) you actually use, on your own consuming application's
+classpath. `common-java-utils-ble` is on Maven Central as of 0.3.0; `common-java-utils` isn't
+published yet, so install it locally first (`cd BSToolbox && mvn install`, or the
+`deploy-maven-local` skill).
 
 ## Release Packaging
 

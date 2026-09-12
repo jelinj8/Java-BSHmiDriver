@@ -1,5 +1,6 @@
 package cz.bliksoft.hmieink.protocol;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -8,9 +9,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import cz.bliksoft.hmieink.protocol.schema.CommandSchema;
+import cz.bliksoft.hmieink.protocol.schema.PayloadCodec;
 import cz.bliksoft.hmieink.protocol.script.ScriptRunner;
 
 /**
@@ -107,6 +112,37 @@ class ScriptRunnerTest {
 
 		assertEquals(1, transport.getSent().size());
 		assertEquals(CommandId.FAST_CLEAR, transport.getSent().get(0).getCommandId());
+	}
+
+	@AfterEach
+	void clearIconSpecCache() {
+		IconSpecCache.clear();
+	}
+
+	@Test
+	void hashTokenResolvesBytesCachedByIconSpec() throws IOException {
+		byte[] cached = { 5, 4, 3, 2, 1 };
+		IconSpecCache.put("logo", cached);
+		FakeFrameTransport transport = new FakeFrameTransport();
+		transport.setResponder(request -> new Frame(CommandId.ACK, request.getSeq(),
+				new byte[] { (byte) request.getSeq(), 0, 0, Status.OK }));
+		HmiDevice device = new HmiDevice(transport);
+		ScriptRunner runner = new ScriptRunner(device, QUIET);
+
+		runner.runLine("LOG_MESSAGE|#logo", '|');
+
+		Map<String, Object> fields = PayloadCodec.decode(CommandSchema.byId(CommandId.LOG_MESSAGE),
+				transport.getSent().get(0).getPayload());
+		assertArrayEquals(cached, (byte[]) fields.get("MARKER"));
+	}
+
+	@Test
+	void hashTokenForUnknownNameThrows() {
+		FakeFrameTransport transport = new FakeFrameTransport();
+		HmiDevice device = new HmiDevice(transport);
+		ScriptRunner runner = new ScriptRunner(device, QUIET);
+
+		assertThrows(IllegalArgumentException.class, () -> runner.runLine("LOG_MESSAGE|#not_cached", '|'));
 	}
 
 	private static void sleepUnchecked(long ms) {

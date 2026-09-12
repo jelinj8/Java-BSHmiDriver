@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import cz.bliksoft.hmieink.protocol.IconSpecCache;
 import cz.bliksoft.hmieink.protocol.schema.CommandSchema;
 import cz.bliksoft.hmieink.protocol.schema.CommandSpec;
 import cz.bliksoft.hmieink.protocol.schema.FieldKind;
@@ -32,13 +33,16 @@ import cz.bliksoft.hmieink.protocol.schema.PayloadCodec;
  * \<separator>}, and {@code \\uXXXX} (a 4-hex-digit Unicode code unit) - this
  * is what lets a single shell-line {@code -c} argument carry a
  * newline/tab/arbitrary Unicode character. A {@code BYTES} field's token is
- * either escaped text (UTF-8 encoded) or {@code @<local file path>} to read raw
- * bytes from a file (used for image/OTA/upload payloads - RLE-compressed
- * transfers are out of scope here, see {@link PayloadCodec}'s class doc).
- * Enum-valued fields accept the symbolic constant name (case-insensitive) or a
- * raw integer (decimal, or {@code 0x}-prefixed hex); a bitmask field
- * ({@link FieldSpec#isBitmask}) accepts one or more names joined by {@code +}
- * (not {@code |}, so it keeps working under any {@code -s} separator).
+ * either escaped text (UTF-8 encoded), {@code @<local file path>} to read raw
+ * bytes from a file, or {@code #<name>} to reuse the {@code .epi} bytes an
+ * {@code ICONSPEC} pseudo-command (see {@code ScriptRunner}) cached under that
+ * name in {@link IconSpecCache} (used for image/OTA/upload payloads -
+ * RLE-compressed transfers are out of scope here, see {@link PayloadCodec}'s
+ * class doc). Enum-valued fields accept the symbolic constant name
+ * (case-insensitive) or a raw integer (decimal, or {@code 0x}-prefixed hex); a
+ * bitmask field ({@link FieldSpec#isBitmask}) accepts one or more names joined
+ * by {@code +} (not {@code |}, so it keeps working under any {@code -s}
+ * separator).
  *
  * <p>
  * {@link #format} always renders every field, including
@@ -152,6 +156,15 @@ public final class TextCommandFormat {
 				throw new IllegalArgumentException("cannot read file '" + token.substring(1) + "': " + e.getMessage(),
 						e);
 			}
+		}
+		if (token.startsWith("#")) {
+			String name = token.substring(1);
+			byte[] cached = IconSpecCache.get(name);
+			if (cached == null) {
+				throw new IllegalArgumentException(
+						"no image cached as '" + name + "' - run ICONSPEC|" + name + "|<spec> first");
+			}
+			return cached;
 		}
 		return token.getBytes(StandardCharsets.UTF_8);
 	}
@@ -396,14 +409,13 @@ public final class TextCommandFormat {
 		List<String> tokens = new ArrayList<>();
 		StringBuilder cur = new StringBuilder();
 		int i = 0;
-		// A token starting with '@' (the "read a local file" convention, see BYTES
-		// fields) is
-		// taken verbatim, with no escape processing at all - only the next literal
-		// separator ends
-		// it. Otherwise an ordinary Windows path (backslashes throughout) would collide
-		// with this
-		// same escape syntax (e.g. "\Users" parsed as an unrecognized \U escape).
-		boolean rawMode = !line.isEmpty() && line.charAt(0) == '@';
+		// A token starting with '@' (the "read a local file" convention) or '#' (the
+		// "read from IconSpecCache" convention, see BYTES fields) is taken verbatim,
+		// with no escape processing at all - only the next literal separator ends it.
+		// Otherwise an ordinary Windows path (backslashes throughout) would collide
+		// with this same escape syntax (e.g. "\Users" parsed as an unrecognized \U
+		// escape).
+		boolean rawMode = !line.isEmpty() && (line.charAt(0) == '@' || line.charAt(0) == '#');
 		while (i < line.length()) {
 			char c = line.charAt(i);
 			if (!rawMode && c == '\\' && i + 1 < line.length()) {
@@ -433,7 +445,7 @@ public final class TextCommandFormat {
 				tokens.add(cur.toString());
 				cur.setLength(0);
 				i++;
-				rawMode = i < line.length() && line.charAt(i) == '@';
+				rawMode = i < line.length() && (line.charAt(i) == '@' || line.charAt(i) == '#');
 			} else {
 				cur.append(c);
 				i++;

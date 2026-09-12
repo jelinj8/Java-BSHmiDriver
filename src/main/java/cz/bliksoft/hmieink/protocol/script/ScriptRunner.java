@@ -14,6 +14,7 @@ import java.util.Locale;
 
 import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
+import cz.bliksoft.hmieink.protocol.IconSpecCache;
 import cz.bliksoft.hmieink.protocol.Volume;
 import cz.bliksoft.hmieink.protocol.sync.FolderSync;
 import cz.bliksoft.hmieink.protocol.sync.SyncMode;
@@ -27,14 +28,10 @@ import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
  * too. Blank lines and lines starting with {@code #} are skipped.
  *
  * <p>
- * Two PC-local pseudo-commands control execution but are never sent to the
- * device - requested directly: "We need additional cmdline / filescript PC
- * local commands - wait for log message frame (e.g. finished macro, with a
- * timeout, with a specific text or any) and pause (by time) before sending
- * following commands. These wouldn't propagate to the device, just control
- * execution." Recognized by name before a line ever reaches
- * {@link HmiDevice#sendText} - neither name exists as a real {@code CommandId},
- * so there's no collision risk:
+ * PC-local pseudo-commands control execution but are never sent to the device.
+ * They are recognized by name before a line ever reaches
+ * {@link HmiDevice#sendText} - none of these names exist as real
+ * {@code CommandId}s, so there's no collision risk:
  *
  * <ul>
  * <li>{@code SLEEP|<durationMs>} - blocks the script (not the device) for that
@@ -51,6 +48,12 @@ import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
  * being one wire command itself. The sync manifest (MERGE mode's
  * change-tracking state) lives alongside {@code localDir} as a sibling
  * {@code <localDir-name>.bshmisync-manifest} file.
+ * <li>{@code ICONSPEC|<name>|<spec>} - generates an image from the icon spec,
+ * converts it to binary B/W format, and stores it in {@link IconSpecCache}
+ * under {@code name}. A later command can reference it from a {@code BYTES}
+ * field as {@code #name} (mirroring {@code @<file>}, see
+ * {@link TextCommandFormat}). Requires the {@code common-java-utils} library on
+ * the classpath.
  * </ul>
  *
  * A timed-out {@code WAIT_LOG} throws {@link IOException}, the same as an
@@ -107,6 +110,9 @@ public final class ScriptRunner {
 			return;
 		case "SYNC":
 			runSync(tokens);
+			return;
+		case "ICONSPEC":
+			runIconSpec(tokens, line, separator);
 			return;
 		default:
 			Frame response = device.sendText(line, separator);
@@ -187,6 +193,38 @@ public final class ScriptRunner {
 		} catch (IllegalArgumentException e) {
 			throw new IllegalArgumentException(
 					"SYNC: unknown mode '" + token + "' (expected PC_MASTER|DEVICE_MASTER|MERGE)", e);
+		}
+	}
+
+	private void runIconSpec(List<String> tokens, String line, char separator) throws IOException {
+		if (tokens.size() < 3) {
+			throw new IllegalArgumentException("ICONSPEC expects name|spec (at least 2 fields), got " + tokens);
+		}
+		String name = tokens.get(1);
+		// The spec is everything after the first separator following the name
+		// Find the position of the first separator after "ICONSPEC|name"
+		String spec;
+		int nameEnd = tokens.get(0).length() + 1 + tokens.get(1).length();
+		if (nameEnd < line.length() && line.charAt(nameEnd) == separator) {
+			spec = line.substring(nameEnd + 1);
+		} else {
+			// Fallback: join remaining tokens with separator
+			StringBuilder sb = new StringBuilder(tokens.get(2));
+			for (int i = 3; i < tokens.size(); i++) {
+				sb.append(separator).append(tokens.get(i));
+			}
+			spec = sb.toString();
+		}
+		out.println("-> ICONSPEC " + name + " | " + spec);
+		if (!IconSpecCache.isAvailable()) {
+			throw new IOException(
+					"ICONSPEC requires the common-java-utils library (cz.bliksoft.java:common-java-utils) on the classpath");
+		}
+		try {
+			byte[] epi = IconSpecCache.generateAndCache(name, spec);
+			out.println("<- cached as #" + name + " (" + epi.length + " bytes)");
+		} catch (UnsupportedOperationException e) {
+			throw new IOException(e.getMessage(), e);
 		}
 	}
 

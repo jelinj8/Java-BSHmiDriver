@@ -10,6 +10,7 @@ import cz.bliksoft.hmieink.protocol.Ble;
 import cz.bliksoft.hmieink.protocol.BleHmiDevice;
 import cz.bliksoft.hmieink.protocol.FileHmiDevice;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
+import cz.bliksoft.hmieink.protocol.IconSpecCache;
 import cz.bliksoft.hmieink.protocol.SerialHmiDevice;
 import cz.bliksoft.hmieink.protocol.TcpHmiDevice;
 import cz.bliksoft.hmieink.protocol.script.ScriptRunner;
@@ -38,9 +39,9 @@ import picocli.CommandLine;
  * picocli's own annotation model collapses repeated *different* options
  * together and loses that interleaving (confirmed against picocli's own docs -
  * see the design plan this class implements). Each line is run through
- * {@link ScriptRunner}, which also recognizes two PC-local pseudo-commands
- * ({@code SLEEP}/{@code WAIT_LOG}, see its own class doc) that control script
- * execution without ever being sent to the device.
+ * {@link ScriptRunner}, which also recognizes PC-local pseudo-commands
+ * ({@code SLEEP}/{@code WAIT_LOG}/{@code ICONSPEC}, see its own class doc) that
+ * control script execution without ever being sent to the device.
  */
 public final class Cli {
 
@@ -70,11 +71,11 @@ public final class Cli {
 
 		@CommandLine.Option(names = { "-f",
 				"--file" }, description = "read commands from FILE, one per line (also accepts SLEEP|ms and "
-						+ "WAIT_LOG|ms[|marker], see ScriptRunner) - repeatable, order-sensitive with -c/-p")
+						+ "WAIT_LOG|ms[|marker] and ICONSPEC|name|spec, see ScriptRunner) - repeatable, order-sensitive with -c/-p")
 		List<String> files = new ArrayList<>();
 
 		@CommandLine.Option(names = { "-c",
-				"--command" }, description = "send one inline command, or SLEEP|ms / WAIT_LOG|ms[|marker] (local only, "
+				"--command" }, description = "send one inline command, or SLEEP|ms / WAIT_LOG|ms[|marker] / ICONSPEC|name|spec (local only, "
 						+ "see ScriptRunner) - repeatable, order-sensitive with -f/-p")
 		List<String> commands = new ArrayList<>();
 
@@ -85,6 +86,10 @@ public final class Cli {
 		@CommandLine.Option(names = { "-s",
 				"--separator" }, description = "change the field separator (default |) for subsequent commands - must be exactly one character")
 		char separator = '|';
+
+		@CommandLine.Option(names = { "-i",
+				"--image-root" }, description = "root directory for resolving relative image paths in ICONSPEC commands")
+		String imageRoot;
 	}
 
 	static final class VersionProvider implements CommandLine.IVersionProvider {
@@ -126,6 +131,10 @@ public final class Cli {
 	}
 
 	private static void runWithDevice(Options opts, String[] args) throws Exception {
+		// Set the branding images root for ICONSPEC commands if specified
+		if (opts.imageRoot != null) {
+			IconSpecCache.setBrandingImagesRoot(opts.imageRoot);
+		}
 		switch (opts.transport.toLowerCase(Locale.ROOT)) {
 		case "tcp": {
 			String[] hostPort = opts.address.split(":", 2);
@@ -248,6 +257,8 @@ public final class Cli {
 			case "--usage-pin":
 			case "-K":
 			case "--admin-pin":
+			case "-i":
+			case "--image-root":
 				i += inlineValue != null ? 1 : 2;
 				continue;
 			case "-h":
