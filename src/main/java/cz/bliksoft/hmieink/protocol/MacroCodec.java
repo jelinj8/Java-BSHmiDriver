@@ -5,10 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Encoder/decoder for the {@code .macro} file format (doc/PROTOCOL.md §0x0A00) - a simple sequence
- * of (COMMAND_ID, PAYLOAD) entries, the exact same shape firmware's RECORD_MACRO/SAVE_MACRO produce
- * and PLAY_MACRO consumes. Lets a PC application hand-author a macro (e.g. a boot-time demo) without
- * needing a live RECORD_MACRO session first.
+ * Encoder/decoder for the {@code .macro} file format (doc/PROTOCOL.md §0x0A00)
+ * - a simple sequence of (COMMAND_ID, PAYLOAD) entries, the exact same shape
+ * firmware's RECORD_MACRO/SAVE_MACRO produce and PLAY_MACRO consumes. Lets a PC
+ * application hand-author a macro (e.g. a boot-time demo) without needing a
+ * live RECORD_MACRO session first.
  */
 public final class MacroCodec {
 

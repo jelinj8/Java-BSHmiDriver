@@ -19,10 +19,10 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 /**
- * Exercises {@link TcpFrameTransport} end-to-end against a real loopback TCP server standing in
- * for the device - no hardware needed. Also stands in as the main test of
- * {@link AbstractStreamFrameTransport}'s reader-thread/listener plumbing, which
- * {@link SerialFrameTransport} shares.
+ * Exercises {@link TcpFrameTransport} end-to-end against a real loopback TCP
+ * server standing in for the device - no hardware needed. Also stands in as the
+ * main test of {@link AbstractStreamFrameTransport}'s reader-thread/listener
+ * plumbing, which {@link SerialFrameTransport} shares.
  */
 class TcpFrameTransportTest {
 
@@ -63,9 +63,9 @@ class TcpFrameTransportTest {
 			client.setListener(frame -> received.add(frame));
 			client.connect();
 			try {
-				server.replyRaw(new Frame(CommandId.BUTTON_EVENT, 1, new byte[] {1}).encode());
-				server.replyRaw(new Frame(CommandId.BUTTON_EVENT, 2, new byte[] {2}).encode());
-				server.replyRaw(new Frame(CommandId.BUTTON_EVENT, 3, new byte[] {3}).encode());
+				server.replyRaw(new Frame(CommandId.BUTTON_EVENT, 1, new byte[] { 1 }).encode());
+				server.replyRaw(new Frame(CommandId.BUTTON_EVENT, 2, new byte[] { 2 }).encode());
+				server.replyRaw(new Frame(CommandId.BUTTON_EVENT, 3, new byte[] { 3 }).encode());
 
 				for (int expectedSeq = 1; expectedSeq <= 3; expectedSeq++) {
 					Frame f = received.poll(5, TimeUnit.SECONDS);
@@ -102,7 +102,10 @@ class TcpFrameTransportTest {
 		client.close();
 	}
 
-	/** A minimal single-connection TCP server standing in for the device side, for tests only. */
+	/**
+	 * A minimal single-connection TCP server standing in for the device side, for
+	 * tests only.
+	 */
 	private static final class FakeDeviceServer implements AutoCloseable {
 		private final ServerSocket serverSocket;
 		private volatile Socket accepted;
@@ -129,7 +132,8 @@ class TcpFrameTransportTest {
 				in = accepted.getInputStream();
 				out = accepted.getOutputStream();
 			} catch (IOException ignored) {
-				// server closed while waiting for the (single) connection - fine for these tests
+				// server closed while waiting for the (single) connection - fine for these
+				// tests
 			} finally {
 				acceptedLatch.countDown();
 			}

@@ -4,8 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
 /**
- * Custom PackBits-inspired RLE codec for 1bpp bitmap payloads (doc/PROTOCOL.md §6). Operates on
- * whole bytes of the raw bitmap. Not compatible with off-the-shelf TIFF PackBits decoders.
+ * Custom PackBits-inspired RLE codec for 1bpp bitmap payloads (doc/PROTOCOL.md
+ * §6). Operates on whole bytes of the raw bitmap. Not compatible with
+ * off-the-shelf TIFF PackBits decoders.
  *
  * <pre>
  * Control byte C:

@@ -1,8 +1,8 @@
 package cz.bliksoft.hmieink.protocol;
 
 /**
- * Local drawing primitives' compositing mode (doc/PROTOCOL.md §12.1). Mirrors firmware's
- * {@code Protocol.h} {@code drawMode} namespace - keep both in sync.
+ * Local drawing primitives' compositing mode (doc/PROTOCOL.md §12.1). Mirrors
+ * firmware's {@code Protocol.h} {@code drawMode} namespace - keep both in sync.
  */
 public final class DrawMode {
 

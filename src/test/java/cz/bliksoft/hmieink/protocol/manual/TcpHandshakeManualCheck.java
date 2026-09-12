@@ -7,10 +7,11 @@ import cz.bliksoft.hmieink.protocol.HandshakeCapabilities;
 import cz.bliksoft.hmieink.protocol.TcpFrameTransport;
 
 /**
- * Manual, real-hardware verification for {@link TcpFrameTransport} - the WiFi/TCP counterpart of
- * {@link SerialHandshakeManualCheck}. NOT part of the automated `mvn test` suite (real device
- * required, and its IP address isn't known ahead of time). Run it once the board's boot log
- * (Serial monitor) has printed "TCP: server listening on &lt;ip&gt;:&lt;port&gt;":
+ * Manual, real-hardware verification for {@link TcpFrameTransport} - the
+ * WiFi/TCP counterpart of {@link SerialHandshakeManualCheck}. NOT part of the
+ * automated `mvn test` suite (real device required, and its IP address isn't
+ * known ahead of time). Run it once the board's boot log (Serial monitor) has
+ * printed "TCP: server listening on &lt;ip&gt;:&lt;port&gt;":
  *
  * <pre>
  * java -cp target/classes;target/test-classes cz.bliksoft.hmieink.protocol.manual.TcpHandshakeManualCheck &lt;ip&gt; [port]
@@ -38,8 +39,7 @@ public final class TcpHandshakeManualCheck {
 			System.out.println("-> sending HANDSHAKE_REQUEST");
 			// PIN_TYPE=NONE, PIN_LEN=0 (doc/PROTOCOL.md §5.3) - no pin offered.
 			Frame response = client.send(CommandId.HANDSHAKE_REQUEST, new byte[] { 0, 0 });
-			System.out.println(
-					"OK: got HANDSHAKE_RESPONSE with " + response.getPayload().length + "-byte TLV payload");
+			System.out.println("OK: got HANDSHAKE_RESPONSE with " + response.getPayload().length + "-byte TLV payload");
 
 			HandshakeCapabilities caps = HandshakeCapabilities.parse(response.getPayload());
 			System.out.printf("  protocolVersion=%d%n", caps.getProtocolVersion());
@@ -49,7 +49,8 @@ public final class TcpHandshakeManualCheck {
 					caps.getPixelPitchYUm(), caps.getDpiX(), caps.getDpiY());
 			System.out.printf("  maxChunkSize=%d featureBitmask=0x%08X%n", caps.getMaxChunkSize(),
 					caps.getFeatureBitmask());
-			System.out.printf("  deviceModel=%s firmwareVersion=%s%n", caps.getDeviceModel(), caps.getFirmwareVersion());
+			System.out.printf("  deviceModel=%s firmwareVersion=%s%n", caps.getDeviceModel(),
+					caps.getFirmwareVersion());
 			System.out.printf("  deviceName=%s activeTransport=0x%02X%n", caps.getDeviceName(),
 					caps.getActiveTransport());
 		} finally {

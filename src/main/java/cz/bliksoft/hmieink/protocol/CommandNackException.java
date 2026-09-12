@@ -2,7 +2,10 @@ package cz.bliksoft.hmieink.protocol;
 
 import java.io.IOException;
 
-/** Thrown by {@link CommandClient#send} when the device replies NACK (doc/PROTOCOL.md §10). */
+/**
+ * Thrown by {@link CommandClient#send} when the device replies NACK
+ * (doc/PROTOCOL.md §10).
+ */
 public final class CommandNackException extends IOException {
 
 	private static final long serialVersionUID = 1L;
@@ -18,7 +21,10 @@ public final class CommandNackException extends IOException {
 		this.status = status;
 	}
 
-	/** Parses a raw NACK frame's payload (doc/PROTOCOL.md §10: REF_SEQ, REF_COMMAND_ID u16 LE, STATUS). */
+	/**
+	 * Parses a raw NACK frame's payload (doc/PROTOCOL.md §10: REF_SEQ,
+	 * REF_COMMAND_ID u16 LE, STATUS).
+	 */
 	static CommandNackException fromNackFrame(Frame nack) {
 		byte[] p = nack.getPayload();
 		int refSeq = p.length > 0 ? p[0] & 0xFF : -1;

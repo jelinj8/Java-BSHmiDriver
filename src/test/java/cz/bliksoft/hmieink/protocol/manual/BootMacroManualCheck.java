@@ -19,15 +19,17 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of the boot macro (doc/PROTOCOL.md §0x0A00): uploads a
- * one-entry macro (a single DRAW_RECT) to {@code /boot.macro} on VOLUME=INTERNAL, closes the
- * connection, reconnects (which resets the board via the CH340 adapter's DTR/RTS lines, the same
- * mechanism every other manual check's own initial connect relies on), and confirms - via
- * READ_SCREEN, without ever sending a live PLAY_MACRO this run - that the rectangle appears anyway,
- * proving the boot macro was found and played automatically during {@code setup()}. Always deletes
- * {@code /boot.macro} afterward (even on failure), since leaving it behind would make every
- * subsequent manual check's own initial connect replay it too. NOT part of the automated
- * {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of the boot macro (doc/PROTOCOL.md
+ * §0x0A00): uploads a one-entry macro (a single DRAW_RECT) to
+ * {@code /boot.macro} on VOLUME=INTERNAL, closes the connection, reconnects
+ * (which resets the board via the CH340 adapter's DTR/RTS lines, the same
+ * mechanism every other manual check's own initial connect relies on), and
+ * confirms - via READ_SCREEN, without ever sending a live PLAY_MACRO this run -
+ * that the rectangle appears anyway, proving the boot macro was found and
+ * played automatically during {@code setup()}. Always deletes
+ * {@code /boot.macro} afterward (even on failure), since leaving it behind
+ * would make every subsequent manual check's own initial connect replay it too.
+ * NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -55,10 +57,10 @@ public final class BootMacroManualCheck {
 		CommandClient client = new CommandClient(new SerialFrameTransport(portDescriptor));
 		client.connect();
 		try {
-			byte[] macro = MacroCodec.encode(Collections.singletonList(
-					new MacroCodec.Entry(CommandId.DRAW_RECT, rectPayload(RECT_X, RECT_Y))));
-			System.out.println("-> FILE_UPLOAD " + BOOT_MACRO_PATH + " to VOLUME=INTERNAL (" + macro.length
-					+ " bytes)");
+			byte[] macro = MacroCodec.encode(
+					Collections.singletonList(new MacroCodec.Entry(CommandId.DRAW_RECT, rectPayload(RECT_X, RECT_Y))));
+			System.out
+					.println("-> FILE_UPLOAD " + BOOT_MACRO_PATH + " to VOLUME=INTERNAL (" + macro.length + " bytes)");
 			upload(client, BOOT_MACRO_PATH, macro);
 		} finally {
 			client.close();
@@ -119,8 +121,8 @@ public final class BootMacroManualCheck {
 
 	private static void upload(CommandClient client, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.INTERNAL);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

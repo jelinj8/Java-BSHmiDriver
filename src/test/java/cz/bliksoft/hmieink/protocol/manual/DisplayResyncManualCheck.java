@@ -12,15 +12,18 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.WakeReason;
 
 /**
- * Manual, real-hardware, VISUAL verification of {@code WorkingBuffer::ensureControllerReady()}
- * (doc/PROTOCOL.md §17 design note 79/80) - specifically the ghosting risk a bare re-init (without
- * reseeding the SSD1683's own "current"/"previous" RAM banks from {@code panelBuffer_}) would leave
- * behind: drawing a small white rect *inside* a region that already had real (non-blank) content,
- * immediately after a {@code LOW_POWER} wake. Unlike the other manual checks this asserts nothing
- * programmatically - there is no way to read the controller's own internal RAM banks over the wire,
- * only this class's own (potentially wrong, if the bug being tested for is present)
- * {@code panelBuffer_} shadow - so this just sets up the scenario and prints what to look for.
- * NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware, VISUAL verification of
+ * {@code WorkingBuffer::ensureControllerReady()} (doc/PROTOCOL.md §17 design
+ * note 79/80) - specifically the ghosting risk a bare re-init (without
+ * reseeding the SSD1683's own "current"/"previous" RAM banks from
+ * {@code panelBuffer_}) would leave behind: drawing a small white rect *inside*
+ * a region that already had real (non-blank) content, immediately after a
+ * {@code LOW_POWER} wake. Unlike the other manual checks this asserts nothing
+ * programmatically - there is no way to read the controller's own internal RAM
+ * banks over the wire, only this class's own (potentially wrong, if the bug
+ * being tested for is present) {@code panelBuffer_} shadow - so this just sets
+ * up the scenario and prints what to look for. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -80,8 +83,8 @@ public final class DisplayResyncManualCheck {
 		payload.put((byte) color);
 		payload.put((byte) DrawMode.REPLACE);
 		payload.put((byte) (filled ? 1 : 0));
-		payload.put((byte) 1);	  // LINE_WIDTH
-		payload.put((byte) 0x01);	// FLAGS: REFRESH_NOW, partial
+		payload.put((byte) 1); // LINE_WIDTH
+		payload.put((byte) 0x01); // FLAGS: REFRESH_NOW, partial
 		client.send(CommandId.DRAW_RECT, payload.array());
 	}
 

@@ -59,7 +59,8 @@ class FrameTest {
 	@Test
 	void rejectsPayloadLengthMismatch() {
 		byte[] encoded = new Frame(0x0001, 0, new byte[] { 1, 2, 3 }).encode();
-		// Corrupt PAYLOAD_LEN (offset 5, u32 LE) to claim a larger payload than is present.
+		// Corrupt PAYLOAD_LEN (offset 5, u32 LE) to claim a larger payload than is
+		// present.
 		encoded[5] = 100;
 		assertThrows(FrameException.class, () -> Frame.decode(encoded));
 	}

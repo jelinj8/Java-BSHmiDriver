@@ -16,10 +16,12 @@ import cz.bliksoft.javautils.ble.ConnectionParameters;
 import cz.bliksoft.javautils.ble.ScanFilter;
 
 /**
- * Manual, real-hardware verification for {@link BleFrameTransport} - the BLE counterpart of
- * {@link SerialHandshakeManualCheck}/{@link TcpHandshakeManualCheck}. NOT part of the automated
- * `mvn test` suite (real device required). Scans for a device advertising the CrowPanel service
- * UUID (doc/PROTOCOL.md §19), connects, and exchanges HANDSHAKE_REQUEST/HANDSHAKE_RESPONSE:
+ * Manual, real-hardware verification for {@link BleFrameTransport} - the BLE
+ * counterpart of
+ * {@link SerialHandshakeManualCheck}/{@link TcpHandshakeManualCheck}. NOT part
+ * of the automated `mvn test` suite (real device required). Scans for a device
+ * advertising the CrowPanel service UUID (doc/PROTOCOL.md §19), connects, and
+ * exchanges HANDSHAKE_REQUEST/HANDSHAKE_RESPONSE:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jSerialComm jar&gt;;&lt;BSToolbox-BLE jar&gt; \
@@ -28,9 +30,10 @@ import cz.bliksoft.javautils.ble.ScanFilter;
  *
  * <p>
  * Uses the <em>same</em> {@link BleAdapter} instance for both the scan and the
- * {@link BleFrameTransport} it hands the discovered address to - see {@link BleFrameTransport}'s
- * class doc for why that's required (a second, freshly constructed adapter that never scanned
- * reliably fails to connect to an address a different adapter just discovered).
+ * {@link BleFrameTransport} it hands the discovered address to - see
+ * {@link BleFrameTransport}'s class doc for why that's required (a second,
+ * freshly constructed adapter that never scanned reliably fails to connect to
+ * an address a different adapter just discovered).
  */
 public final class BleHandshakeManualCheck {
 
@@ -67,14 +70,18 @@ public final class BleHandshakeManualCheck {
 			}
 
 			System.out.println("Connecting to " + address + " (" + nameRef.get() + ")...");
-			// Same `adapter` instance that ran the scan above - see BleFrameTransport's class doc.
+			// Same `adapter` instance that ran the scan above - see BleFrameTransport's
+			// class doc.
 			CommandClient client = new CommandClient(new BleFrameTransport(adapter, address));
 			client.connect();
 			System.out.println("Connected.");
 
-			// Same cached BlePeripheral instance BleFrameTransport connected above (per-address
-			// cache on BleAdapter) - exercises the connection-quality/diagnostic API surface
-			// (getMtu/readRssi/getConnectionParameters/requestConnectionParameters) against real
+			// Same cached BlePeripheral instance BleFrameTransport connected above
+			// (per-address
+			// cache on BleAdapter) - exercises the connection-quality/diagnostic API
+			// surface
+			// (getMtu/readRssi/getConnectionParameters/requestConnectionParameters) against
+			// real
 			// hardware.
 			BlePeripheral peripheral = adapter.getPeripheral(address);
 			try {
@@ -89,7 +96,8 @@ public final class BleHandshakeManualCheck {
 			}
 			try {
 				ConnectionParameters before = peripheral.getConnectionParameters();
-				System.out.println("Connection parameters: " + (before != null ? before : "not exposed on this platform"));
+				System.out.println(
+						"Connection parameters: " + (before != null ? before : "not exposed on this platform"));
 				peripheral.requestConnectionParameters(ConnectionParameterPreset.THROUGHPUT_OPTIMIZED);
 				ConnectionParameters after = peripheral.getConnectionParameters();
 				System.out.println("Connection parameters after THROUGHPUT_OPTIMIZED request: "

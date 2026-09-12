@@ -59,7 +59,8 @@ class FileFrameTransportTest {
 		CommandClient client = new CommandClient(new FileFrameTransport(out.toString()), 1000);
 		client.connect();
 		try {
-			// Would throw CommandTimeoutException within 1s if the synthetic ACK path were broken.
+			// Would throw CommandTimeoutException within 1s if the synthetic ACK path were
+			// broken.
 			Frame response = client.send(CommandId.FAST_CLEAR, new byte[] { 0, 0 });
 			assertEquals(CommandId.ACK, response.getCommandId());
 		} finally {

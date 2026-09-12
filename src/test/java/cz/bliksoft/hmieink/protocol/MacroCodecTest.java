@@ -35,8 +35,8 @@ class MacroCodecTest {
 
 	@Test
 	void roundTripsEntryWithEmptyPayload() {
-		List<MacroCodec.Entry> decoded =
-				MacroCodec.decode(MacroCodec.encode(Arrays.asList(new MacroCodec.Entry(CommandId.RECORD_MACRO, new byte[0]))));
+		List<MacroCodec.Entry> decoded = MacroCodec
+				.decode(MacroCodec.encode(Arrays.asList(new MacroCodec.Entry(CommandId.RECORD_MACRO, new byte[0]))));
 		assertEquals(1, decoded.size());
 		assertEquals(0, decoded.get(0).payload.length);
 	}
@@ -49,7 +49,8 @@ class MacroCodecTest {
 
 	@Test
 	void decodeRejectsTruncatedEntry() {
-		byte[] macro = MacroCodec.encode(Arrays.asList(new MacroCodec.Entry(CommandId.PAUSE, new byte[] { 1, 2, 3, 4 })));
+		byte[] macro = MacroCodec
+				.encode(Arrays.asList(new MacroCodec.Entry(CommandId.PAUSE, new byte[] { 1, 2, 3, 4 })));
 		byte[] truncated = Arrays.copyOf(macro, macro.length - 2);
 		assertThrows(IllegalArgumentException.class, () -> MacroCodec.decode(truncated));
 	}

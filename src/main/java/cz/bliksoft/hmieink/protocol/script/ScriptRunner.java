@@ -22,37 +22,43 @@ import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
 
 /**
  * Runs a sequence of text command lines (doc-external plaintext notation, see
- * {@link TextCommandFormat}) against an {@link HmiDevice} - the shared engine behind the CLI's
- * {@code -f}/{@code -c}/{@code -p}, usable directly from Java too. Blank lines and lines starting
- * with {@code #} are skipped.
+ * {@link TextCommandFormat}) against an {@link HmiDevice} - the shared engine
+ * behind the CLI's {@code -f}/{@code -c}/{@code -p}, usable directly from Java
+ * too. Blank lines and lines starting with {@code #} are skipped.
  *
  * <p>
- * Two PC-local pseudo-commands control execution but are never sent to the device - requested
- * directly: "We need additional cmdline / filescript PC local commands - wait for log message
- * frame (e.g. finished macro, with a timeout, with a specific text or any) and pause (by time)
- * before sending following commands. These wouldn't propagate to the device, just control
- * execution." Recognized by name before a line ever reaches {@link HmiDevice#sendText} - neither
- * name exists as a real {@code CommandId}, so there's no collision risk:
+ * Two PC-local pseudo-commands control execution but are never sent to the
+ * device - requested directly: "We need additional cmdline / filescript PC
+ * local commands - wait for log message frame (e.g. finished macro, with a
+ * timeout, with a specific text or any) and pause (by time) before sending
+ * following commands. These wouldn't propagate to the device, just control
+ * execution." Recognized by name before a line ever reaches
+ * {@link HmiDevice#sendText} - neither name exists as a real {@code CommandId},
+ * so there's no collision risk:
  *
  * <ul>
- * <li>{@code SLEEP|<durationMs>} - blocks the script (not the device) for that long.
- * <li>{@code WAIT_LOG|<timeoutMs>} - blocks until <em>any</em> {@code LOG_MESSAGE} (§10.1) is
- * received, or the timeout elapses.
- * <li>{@code WAIT_LOG|<timeoutMs>|<marker>} - like the above, but only a matching marker
- * satisfies it (same escaping as any other string field, see {@link TextCommandFormat}).
+ * <li>{@code SLEEP|<durationMs>} - blocks the script (not the device) for that
+ * long.
+ * <li>{@code WAIT_LOG|<timeoutMs>} - blocks until <em>any</em>
+ * {@code LOG_MESSAGE} (§10.1) is received, or the timeout elapses.
+ * <li>{@code WAIT_LOG|<timeoutMs>|<marker>} - like the above, but only a
+ * matching marker satisfies it (same escaping as any other string field, see
+ * {@link TextCommandFormat}).
  * <li>{@code SYNC|<localDir>|<volume: SD|INTERNAL|PSRAM>|<devicePath>|<mode:
- * PC_MASTER|DEVICE_MASTER|MERGE>} - recursively syncs a local folder against device storage (see
- * {@link FolderSync}), issuing whatever FILE_LIST/DOWNLOAD/UPLOAD/DELETE commands the chosen mode
- * needs rather than being one wire command itself. The sync manifest (MERGE mode's
+ * PC_MASTER|DEVICE_MASTER|MERGE>} - recursively syncs a local folder against
+ * device storage (see {@link FolderSync}), issuing whatever
+ * FILE_LIST/DOWNLOAD/UPLOAD/DELETE commands the chosen mode needs rather than
+ * being one wire command itself. The sync manifest (MERGE mode's
  * change-tracking state) lives alongside {@code localDir} as a sibling
  * {@code <localDir-name>.bshmisync-manifest} file.
  * </ul>
  *
- * A timed-out {@code WAIT_LOG} throws {@link IOException}, the same as an ordinary command's
- * {@code NACK}/timeout would - a script waiting on a synchronization point that never arrives is a
- * real error, not something to silently continue past. {@code SYNC} likewise throws if it leaves
- * any unresolved conflicts (MERGE mode only) rather than silently continuing with some paths left
- * unsynced.
+ * A timed-out {@code WAIT_LOG} throws {@link IOException}, the same as an
+ * ordinary command's {@code NACK}/timeout would - a script waiting on a
+ * synchronization point that never arrives is a real error, not something to
+ * silently continue past. {@code SYNC} likewise throws if it leaves any
+ * unresolved conflicts (MERGE mode only) rather than silently continuing with
+ * some paths left unsynced.
  */
 public final class ScriptRunner {
 
@@ -93,19 +99,19 @@ public final class ScriptRunner {
 		}
 		List<String> tokens = TextCommandFormat.tokenize(line, separator);
 		switch (tokens.get(0).toUpperCase(Locale.ROOT)) {
-			case "SLEEP":
-				runSleep(tokens);
-				return;
-			case "WAIT_LOG":
-				runWaitLog(tokens);
-				return;
-			case "SYNC":
-				runSync(tokens);
-				return;
-			default:
-				Frame response = device.sendText(line, separator);
-				out.println("-> " + line);
-				out.println("<- " + device.describe(response.getCommandId(), response.getPayload(), separator));
+		case "SLEEP":
+			runSleep(tokens);
+			return;
+		case "WAIT_LOG":
+			runWaitLog(tokens);
+			return;
+		case "SYNC":
+			runSync(tokens);
+			return;
+		default:
+			Frame response = device.sendText(line, separator);
+			out.println("-> " + line);
+			out.println("<- " + device.describe(response.getCommandId(), response.getPayload(), separator));
 		}
 	}
 
@@ -152,8 +158,8 @@ public final class ScriptRunner {
 		String devicePath = tokens.get(3);
 		SyncMode mode = parseSyncMode(tokens.get(4));
 		Path manifestFile = localDir.resolveSibling(localDir.getFileName() + ".bshmisync-manifest");
-		out.println("-> SYNC " + localDir + " <-> VOLUME=" + tokens.get(2).toUpperCase(Locale.ROOT) + ":"
-				+ devicePath + " (" + mode + ", local orchestration, not sent to the device as a single command)");
+		out.println("-> SYNC " + localDir + " <-> VOLUME=" + tokens.get(2).toUpperCase(Locale.ROOT) + ":" + devicePath
+				+ " (" + mode + ", local orchestration, not sent to the device as a single command)");
 		SyncResult result = FolderSync.sync(localDir, device, volume, devicePath, mode, manifestFile);
 		out.print(result);
 		if (result.hasConflicts()) {
@@ -164,14 +170,14 @@ public final class ScriptRunner {
 
 	private static int parseVolume(String token) {
 		switch (token.toUpperCase(Locale.ROOT)) {
-			case "SD":
-				return Volume.SD;
-			case "INTERNAL":
-				return Volume.INTERNAL;
-			case "PSRAM":
-				return Volume.PSRAM;
-			default:
-				throw new IllegalArgumentException("SYNC: unknown volume '" + token + "' (expected SD|INTERNAL|PSRAM)");
+		case "SD":
+			return Volume.SD;
+		case "INTERNAL":
+			return Volume.INTERNAL;
+		case "PSRAM":
+			return Volume.PSRAM;
+		default:
+			throw new IllegalArgumentException("SYNC: unknown volume '" + token + "' (expected SD|INTERNAL|PSRAM)");
 		}
 	}
 

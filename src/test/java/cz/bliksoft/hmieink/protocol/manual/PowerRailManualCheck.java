@@ -17,19 +17,23 @@ import cz.bliksoft.hmieink.protocol.Volume;
 import cz.bliksoft.hmieink.protocol.WakeReason;
 
 /**
- * Manual, real-hardware verification of the display (GPIO7) and SD (GPIO42) power-rail gating
- * added to SET_POWER_MODE (doc/PROTOCOL.md §17) and StorageManager's SD idle timeout - requested
- * directly: "for full powerdown we can turn them off completely, for light sleep it should be
- * recoverable, in both cases carefully to not breaking filesystem... inactivity powering down the
- * SD would be nice". Confirms a small draw and a full SD upload/list/download/delete round trip
- * both still work correctly: at boot, immediately after a LOW_POWER (light sleep) wake, after the
- * SD idle-power-down timeout fires with no SD activity (the draw check at that point is a plain
- * regression check, not an idle-timeout test of its own - the display's equivalent idle timeout
- * was built, measured against the SSD1683 datasheet, and deliberately reverted for ACTIVE mode;
- * see design note 79/80), and after a HARD_SLEEP (deep sleep, full reboot) wake. VOLUME=SD steps
- * are skipped (with a warning, not a failure) if STORAGE_INFO reports no card present. Takes
- * several minutes end to end (the idle-timeout wait alone is the dominant cost) - this is slow by
- * design, not broken. NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of the display (GPIO7) and SD (GPIO42)
+ * power-rail gating added to SET_POWER_MODE (doc/PROTOCOL.md §17) and
+ * StorageManager's SD idle timeout - requested directly: "for full powerdown we
+ * can turn them off completely, for light sleep it should be recoverable, in
+ * both cases carefully to not breaking filesystem... inactivity powering down
+ * the SD would be nice". Confirms a small draw and a full SD
+ * upload/list/download/delete round trip both still work correctly: at boot,
+ * immediately after a LOW_POWER (light sleep) wake, after the SD
+ * idle-power-down timeout fires with no SD activity (the draw check at that
+ * point is a plain regression check, not an idle-timeout test of its own - the
+ * display's equivalent idle timeout was built, measured against the SSD1683
+ * datasheet, and deliberately reverted for ACTIVE mode; see design note 79/80),
+ * and after a HARD_SLEEP (deep sleep, full reboot) wake. VOLUME=SD steps are
+ * skipped (with a warning, not a failure) if STORAGE_INFO reports no card
+ * present. Takes several minutes end to end (the idle-timeout wait alone is the
+ * dominant cost) - this is slow by design, not broken. NOT part of the
+ * automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -38,12 +42,13 @@ import cz.bliksoft.hmieink.protocol.WakeReason;
  */
 public final class PowerRailManualCheck {
 
-	// Must exceed StorageManager::kIdlePowerDownMs (30000ms) with a comfortable margin.
+	// Must exceed StorageManager::kIdlePowerDownMs (30000ms) with a comfortable
+	// margin.
 	private static final long IDLE_WAIT_MS = 35_000;
-	private static final long REBOOT_SETTLE_MS = 13_000;	// same margin as OtaManualCheck/PowerManagementManualCheck
+	private static final long REBOOT_SETTLE_MS = 13_000; // same margin as OtaManualCheck/PowerManagementManualCheck
 
 	private static int failures = 0;
-	private static int drawX = 10;	 // walks rightward each call so successive draws don't overlap
+	private static int drawX = 10; // walks rightward each call so successive draws don't overlap
 
 	private PowerRailManualCheck() {
 	}
@@ -61,8 +66,8 @@ public final class PowerRailManualCheck {
 		client.connect();
 		try {
 			boolean sdPresent = storageInfoPresent(client);
-			System.out.println("VOLUME=SD present: " + sdPresent + (sdPresent ? "" : " - SD steps below will be "
-					+ "skipped, not failed"));
+			System.out.println("VOLUME=SD present: " + sdPresent
+					+ (sdPresent ? "" : " - SD steps below will be " + "skipped, not failed"));
 
 			System.out.println("-> baseline: draw + SD round trip right after boot");
 			checkDraw(client, "baseline draw");
@@ -134,9 +139,9 @@ public final class PowerRailManualCheck {
 			payload.putShort((short) 20);
 			payload.put((byte) Color.BLACK);
 			payload.put((byte) DrawMode.REPLACE);
-			payload.put((byte) 1);	  // FILLED
-			payload.put((byte) 1);	  // LINE_WIDTH (ignored, filled)
-			payload.put((byte) 0x01);	// FLAGS: REFRESH_NOW, partial
+			payload.put((byte) 1); // FILLED
+			payload.put((byte) 1); // LINE_WIDTH (ignored, filled)
+			payload.put((byte) 0x01); // FLAGS: REFRESH_NOW, partial
 			client.send(CommandId.DRAW_RECT, payload.array());
 			check(label, true);
 		} catch (CommandNackException e) {
@@ -161,8 +166,8 @@ public final class PowerRailManualCheck {
 
 	private static void upload(CommandClient client, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(1 + 1 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(1 + 1 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.SD);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

@@ -1,9 +1,9 @@
 package cz.bliksoft.hmieink.protocol;
 
 /**
- * SET_ORIENTATION's FLAGS byte (doc/PROTOCOL.md §12.12) - mirroring, applied in logical space
- * before rotation. Mirrors firmware's {@code Protocol.h} {@code orientationFlags} namespace - keep
- * both in sync.
+ * SET_ORIENTATION's FLAGS byte (doc/PROTOCOL.md §12.12) - mirroring, applied in
+ * logical space before rotation. Mirrors firmware's {@code Protocol.h}
+ * {@code orientationFlags} namespace - keep both in sync.
  */
 public final class OrientationFlags {
 

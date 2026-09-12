@@ -15,20 +15,23 @@ import cz.bliksoft.hmieink.protocol.TextAlign;
 import cz.bliksoft.hmieink.protocol.TextBackground;
 
 /**
- * Manual, real-hardware verification of DRAW_TEXT (doc/PROTOCOL.md §12.6): a Czech pangram
- * exercising nearly every accented glyph the embedded font supports (WIDTH=0, single unbounded
- * line), an ALL-CAPS Czech pangram (checks whether accented capitals' diacritics have room above
- * the glyph cell - reported directly as broken for FONT_ID=0x01 in an earlier round, fixed by
- * using max_char_height+y_offset instead of ascent_A for that font's ascent), a word-wrapped
- * English paragraph (WIDTH&gt;0, WRAP=1), center/right-aligned single lines (WIDTH&gt;0, WRAP=0),
- * an opaque-background line, an inverted (COLOR=WHITE + OPAQUE background) line (all FONT_ID=0x00),
- * plus five FONT_ID=0x01 (the larger u8g2_font_unifont_t_extended font, with real precomposed
- * Czech glyphs - no diacritic-overlay composition, unlike FONT_ID=0x00) lines - the ALL-CAPS
- * pangram, opaque background, inverted (COLOR=WHITE + OPAQUE), and a DRAW_MODE=XOR self-cancel
- * check (the same text drawn twice at the same position, REPLACE then XOR - the ink should
- * disappear if DRAW_MODE compositing is genuinely applied per-pixel for this font, not just for
- * FONT_ID=0x00). All sent deferred, then one REFRESH(MODE=0x01). NOT part of the automated
- * {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of DRAW_TEXT (doc/PROTOCOL.md §12.6): a
+ * Czech pangram exercising nearly every accented glyph the embedded font
+ * supports (WIDTH=0, single unbounded line), an ALL-CAPS Czech pangram (checks
+ * whether accented capitals' diacritics have room above the glyph cell -
+ * reported directly as broken for FONT_ID=0x01 in an earlier round, fixed by
+ * using max_char_height+y_offset instead of ascent_A for that font's ascent), a
+ * word-wrapped English paragraph (WIDTH&gt;0, WRAP=1), center/right-aligned
+ * single lines (WIDTH&gt;0, WRAP=0), an opaque-background line, an inverted
+ * (COLOR=WHITE + OPAQUE background) line (all FONT_ID=0x00), plus five
+ * FONT_ID=0x01 (the larger u8g2_font_unifont_t_extended font, with real
+ * precomposed Czech glyphs - no diacritic-overlay composition, unlike
+ * FONT_ID=0x00) lines - the ALL-CAPS pangram, opaque background, inverted
+ * (COLOR=WHITE + OPAQUE), and a DRAW_MODE=XOR self-cancel check (the same text
+ * drawn twice at the same position, REPLACE then XOR - the ink should disappear
+ * if DRAW_MODE compositing is genuinely applied per-pixel for this font, not
+ * just for FONT_ID=0x00). All sent deferred, then one REFRESH(MODE=0x01). NOT
+ * part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -54,12 +57,13 @@ public final class DrawTextManualCheck {
 		client.connect();
 		try {
 			System.out.println("-> DRAW_TEXT: Czech pangram, unbounded single line, deferred");
-			drawText(client, 5, 10, 0, TextAlign.LEFT, false, Color.BLACK, TextBackground.TRANSPARENT,
-					DrawMode.REPLACE, 0x00, "Příliš žluťoučký kůň úpěl ďábelské ódy");
+			drawText(client, 5, 10, 0, TextAlign.LEFT, false, Color.BLACK, TextBackground.TRANSPARENT, DrawMode.REPLACE,
+					0x00, "Příliš žluťoučký kůň úpěl ďábelské ódy");
 
 			System.out.println("-> DRAW_TEXT: word-wrapped paragraph, WIDTH=200, WRAP=1, deferred");
 			drawText(client, 5, 30, 200, TextAlign.LEFT, true, Color.BLACK, TextBackground.TRANSPARENT,
-					DrawMode.REPLACE, 0x00, "The quick brown fox jumps over the lazy dog next to the CrowPanel display");
+					DrawMode.REPLACE, 0x00,
+					"The quick brown fox jumps over the lazy dog next to the CrowPanel display");
 
 			System.out.println("-> DRAW_TEXT: FONT_ID=0x00, ALL-CAPS Czech pangram (checks whether accented capitals' "
 					+ "diacritics have room above the classic font's own fixed-height glyph cell), deferred");
@@ -142,8 +146,8 @@ public final class DrawTextManualCheck {
 			Frame response = client.send(CommandId.DRAW_TEXT, payload.array());
 			System.out.println("   ACKed (0x" + Integer.toHexString(response.getCommandId()) + ")");
 		} catch (CommandNackException e) {
-			System.err.println("FAILED: DRAW_TEXT \"" + text + "\" NACK status=0x"
-					+ Integer.toHexString(e.getStatus()));
+			System.err
+					.println("FAILED: DRAW_TEXT \"" + text + "\" NACK status=0x" + Integer.toHexString(e.getStatus()));
 			System.exit(1);
 		}
 	}

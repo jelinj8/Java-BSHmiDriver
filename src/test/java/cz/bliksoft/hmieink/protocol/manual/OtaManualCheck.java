@@ -17,17 +17,20 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Status;
 
 /**
- * Manual, real-hardware verification of OTA_INSTALL / OTA_APPLY / OTA_STATUS_REQUEST /
- * OTA_CONFIRM / OTA_ROLLBACK (doc/PROTOCOL.md §16). Deliberately OTAs the board with its own
- * *currently running* {@code firmware.bin} - a functional no-op that still exercises the entire
- * real pipeline (transfer, SHA-256 verify, partition write, boot-partition switch, reboot, status
- * reporting, confirm, and rollback) with zero risk of ending up on genuinely different/incompatible
- * firmware. Both OTA partitions end up holding the exact same, already-proven-working image either
- * way. Reboots happen twice (OTA_APPLY, then OTA_ROLLBACK) - the same already-open Serial
- * connection survives both, since only the ESP32 reboots, not the CH340 USB-serial adapter (same
- * technique as {@code PowerManagementManualCheck}'s HARD_SLEEP verification). The whole transfer
- * runs at 115200 baud, so a ~1MB image takes roughly 90 seconds - this check is slow by design, not
- * broken. NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of OTA_INSTALL / OTA_APPLY /
+ * OTA_STATUS_REQUEST / OTA_CONFIRM / OTA_ROLLBACK (doc/PROTOCOL.md §16).
+ * Deliberately OTAs the board with its own *currently running*
+ * {@code firmware.bin} - a functional no-op that still exercises the entire
+ * real pipeline (transfer, SHA-256 verify, partition write, boot-partition
+ * switch, reboot, status reporting, confirm, and rollback) with zero risk of
+ * ending up on genuinely different/incompatible firmware. Both OTA partitions
+ * end up holding the exact same, already-proven-working image either way.
+ * Reboots happen twice (OTA_APPLY, then OTA_ROLLBACK) - the same already-open
+ * Serial connection survives both, since only the ESP32 reboots, not the CH340
+ * USB-serial adapter (same technique as {@code PowerManagementManualCheck}'s
+ * HARD_SLEEP verification). The whole transfer runs at 115200 baud, so a ~1MB
+ * image takes roughly 90 seconds - this check is slow by design, not broken.
+ * NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -36,8 +39,8 @@ import cz.bliksoft.hmieink.protocol.Status;
  */
 public final class OtaManualCheck {
 
-	private static final long OTA_INSTALL_TIMEOUT_MS = 180_000;	// ~1MB @ 115200 baud is slow
-	private static final long REBOOT_SETTLE_MS = 13_000;	// full boot sequence, same margin as elsewhere
+	private static final long OTA_INSTALL_TIMEOUT_MS = 180_000; // ~1MB @ 115200 baud is slow
+	private static final long REBOOT_SETTLE_MS = 13_000; // full boot sequence, same margin as elsewhere
 
 	private static int failures = 0;
 
@@ -60,15 +63,15 @@ public final class OtaManualCheck {
 		client.connect();
 		try {
 			int[] baseline = readOtaStatus(client);
-			System.out.println("baseline OTA_STATUS_RESPONSE: RUNNING_SLOT=" + baseline[0]
-					+ " PENDING_VERIFICATION=" + baseline[1]);
+			System.out.println("baseline OTA_STATUS_RESPONSE: RUNNING_SLOT=" + baseline[0] + " PENDING_VERIFICATION="
+					+ baseline[1]);
 
 			System.out.println("-> validation: OTA_APPLY with nothing staged should NACK(OTA_NOT_STAGED)");
 			expectNack(client, CommandId.OTA_APPLY, new byte[0], Status.OTA_NOT_STAGED);
 
 			System.out.println("-> validation: OTA_INSTALL with mismatched HASH_LEN should NACK(BAD_PARAMETERS)");
-			expectNack(client, CommandId.OTA_INSTALL, buildOtaInstallPayload(new byte[16], OtaHashAlgo.SHA256, 0,
-					new byte[0]), Status.BAD_PARAMETERS);
+			expectNack(client, CommandId.OTA_INSTALL,
+					buildOtaInstallPayload(new byte[16], OtaHashAlgo.SHA256, 0, new byte[0]), Status.BAD_PARAMETERS);
 
 			System.out.println("-> validation: OTA_INSTALL with a wrong hash should NACK(OTA_HASH_MISMATCH)");
 			byte[] wrongHash = sha256.clone();
@@ -113,9 +116,8 @@ public final class OtaManualCheck {
 			Thread.sleep(REBOOT_SETTLE_MS);
 
 			int[] afterRollback = readOtaStatus(client);
-			System.out.println(
-					"   OTA_STATUS_RESPONSE after rollback: RUNNING_SLOT=" + afterRollback[0] + " PENDING_VERIFICATION="
-							+ afterRollback[1]);
+			System.out.println("   OTA_STATUS_RESPONSE after rollback: RUNNING_SLOT=" + afterRollback[0]
+					+ " PENDING_VERIFICATION=" + afterRollback[1]);
 			check("RUNNING_SLOT reverted to the original partition", afterRollback[0] == baseline[0]);
 
 			System.out.println();

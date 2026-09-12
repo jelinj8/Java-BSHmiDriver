@@ -4,8 +4,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * The common Logical Frame envelope shared by all three transports (TCP, BLE, Serial). See
- * doc/PROTOCOL.md §2.
+ * The common Logical Frame envelope shared by all three transports (TCP, BLE,
+ * Serial). See doc/PROTOCOL.md §2.
  *
  * <pre>
  * Offset  Size  Field
@@ -66,7 +66,10 @@ public final class Frame {
 		return payload;
 	}
 
-	/** Serializes this frame to wire bytes, computing and appending the CRC16 trailer. */
+	/**
+	 * Serializes this frame to wire bytes, computing and appending the CRC16
+	 * trailer.
+	 */
 	public byte[] encode() {
 		int total = HEADER_SIZE + payload.length + CRC_SIZE;
 		ByteBuffer buf = ByteBuffer.allocate(total).order(ByteOrder.LITTLE_ENDIAN);
@@ -82,13 +85,13 @@ public final class Frame {
 	}
 
 	/**
-	 * Parses exactly one frame from {@code bytes} (no trailing data allowed - the caller is
-	 * responsible for delimiting frames on streamed transports, or reassembling BLE chunks,
-	 * before calling this).
+	 * Parses exactly one frame from {@code bytes} (no trailing data allowed - the
+	 * caller is responsible for delimiting frames on streamed transports, or
+	 * reassembling BLE chunks, before calling this).
 	 *
-	 * @throws FrameException
-	 *             if the buffer is too short, MAGIC is wrong, the declared PAYLOAD_LEN doesn't
-	 *             match the buffer length, or the CRC16 doesn't match.
+	 * @throws FrameException if the buffer is too short, MAGIC is wrong, the
+	 *                        declared PAYLOAD_LEN doesn't match the buffer length,
+	 *                        or the CRC16 doesn't match.
 	 */
 	public static Frame decode(byte[] bytes) {
 		if (bytes.length < HEADER_SIZE + CRC_SIZE) {

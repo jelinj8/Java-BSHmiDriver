@@ -3,9 +3,9 @@ package cz.bliksoft.hmieink.protocol;
 import java.nio.charset.StandardCharsets;
 
 /**
- * One TLV entry (doc/PROTOCOL.md §5.1): a TYPE byte, a LENGTH byte, and up to 255 bytes of VALUE.
- * Used by the handshake response (§5.2, see {@link HandshakeCapabilities}) and CONFIG_BACKUP/
- * RESTORE (§13).
+ * One TLV entry (doc/PROTOCOL.md §5.1): a TYPE byte, a LENGTH byte, and up to
+ * 255 bytes of VALUE. Used by the handshake response (§5.2, see
+ * {@link HandshakeCapabilities}) and CONFIG_BACKUP/ RESTORE (§13).
  */
 public final class Tlv {
 
@@ -52,8 +52,8 @@ public final class Tlv {
 
 	private void requireLength(int expected) {
 		if (value.length != expected) {
-			throw new IllegalStateException(
-					"TLV type 0x" + Integer.toHexString(type) + " has length " + value.length + ", expected " + expected);
+			throw new IllegalStateException("TLV type 0x" + Integer.toHexString(type) + " has length " + value.length
+					+ ", expected " + expected);
 		}
 	}
 }

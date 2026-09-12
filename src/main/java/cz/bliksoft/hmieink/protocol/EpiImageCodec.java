@@ -4,13 +4,15 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 
 /**
- * Encoder/decoder for the {@code .epi} image file format (doc/PROTOCOL.md §12.7) - referenced by
- * DRAW_IMAGE (uploaded to a volume via FILE_UPLOAD, §14.3). Converts to and from a plain
- * {@link BufferedImage}: {@link #encode} thresholds each pixel's luminance to 1bpp (bit=1=BLACK,
- * matching §6's wire polarity) and, optionally, derives a transparency mask from the alpha
- * channel; {@link #decode} reconstructs a {@code TYPE_INT_ARGB} image from the packed streams.
- * Both directions always RLE-encode the packed streams (reusing {@link RlePackBits}) - "any
- * conformant encoder is valid" per §6, and RLE is a safe default for typical icon/image content.
+ * Encoder/decoder for the {@code .epi} image file format (doc/PROTOCOL.md
+ * §12.7) - referenced by DRAW_IMAGE (uploaded to a volume via FILE_UPLOAD,
+ * §14.3). Converts to and from a plain {@link BufferedImage}: {@link #encode}
+ * thresholds each pixel's luminance to 1bpp (bit=1=BLACK, matching §6's wire
+ * polarity) and, optionally, derives a transparency mask from the alpha
+ * channel; {@link #decode} reconstructs a {@code TYPE_INT_ARGB} image from the
+ * packed streams. Both directions always RLE-encode the packed streams (reusing
+ * {@link RlePackBits}) - "any conformant encoder is valid" per §6, and RLE is a
+ * safe default for typical icon/image content.
  */
 public final class EpiImageCodec {
 
@@ -21,10 +23,15 @@ public final class EpiImageCodec {
 	private static final int FLAG_HAS_MASK = 0x01;
 	private static final int HEADER_SIZE = 19;
 
-	/** A pixel's average RGB value strictly below this (out of 255) becomes BLACK. */
+	/**
+	 * A pixel's average RGB value strictly below this (out of 255) becomes BLACK.
+	 */
 	private static final int LUMINANCE_THRESHOLD = 128;
 
-	/** An alpha value strictly below this (out of 255) becomes transparent (mask bit 0). */
+	/**
+	 * An alpha value strictly below this (out of 255) becomes transparent (mask bit
+	 * 0).
+	 */
 	private static final int ALPHA_THRESHOLD = 128;
 
 	private EpiImageCodec() {

@@ -12,11 +12,12 @@ import org.junit.jupiter.api.Test;
 import cz.bliksoft.hmieink.protocol.OtaHashAlgo;
 
 /**
- * Every registered {@link CommandSpec} - the full catalog, both sendable and decode-only - must
- * round-trip byte-identically through {@code encode -> decode -> encode}. Cheap, broad coverage
- * of the whole command set rather than a handful of hand-picked examples; catches a
- * transcription mistake in {@link CommandSchema} (a wrong field order/kind/length-prefix) that a
- * narrower test could easily miss.
+ * Every registered {@link CommandSpec} - the full catalog, both sendable and
+ * decode-only - must round-trip byte-identically through
+ * {@code encode -> decode -> encode}. Cheap, broad coverage of the whole
+ * command set rather than a handful of hand-picked examples; catches a
+ * transcription mistake in {@link CommandSchema} (a wrong field
+ * order/kind/length-prefix) that a narrower test could easily miss.
  */
 class CommandSchemaRoundTripTest {
 
@@ -46,7 +47,8 @@ class CommandSchemaRoundTripTest {
 	}
 
 	private static Object sampleValue(CommandSpec spec, FieldSpec f) {
-		// OTA_INSTALL.HASH_LEN is derived from HASH_ALGO (OtaHashAlgo.hashLenFor), so HASH's own
+		// OTA_INSTALL.HASH_LEN is derived from HASH_ALGO (OtaHashAlgo.hashLenFor), so
+		// HASH's own
 		// sample length must actually match that algorithm's real digest size.
 		if ("OTA_INSTALL".equals(spec.name) && "HASH_ALGO".equals(f.name)) {
 			return (long) OtaHashAlgo.SHA256;
@@ -54,35 +56,37 @@ class CommandSchemaRoundTripTest {
 		if ("OTA_INSTALL".equals(spec.name) && "HASH".equals(f.name)) {
 			return new byte[32];
 		}
-		// SCREEN_DATA is decode-only (a real device fills DECODED_LEN/ENCODED_LEN independently,
-		// not derived from DATA here) - its sample DATA length must still agree with them for a
+		// SCREEN_DATA is decode-only (a real device fills DECODED_LEN/ENCODED_LEN
+		// independently,
+		// not derived from DATA here) - its sample DATA length must still agree with
+		// them for a
 		// self-consistent round-trip fixture.
 		if ("SCREEN_DATA".equals(spec.name) && ("DECODED_LEN".equals(f.name) || "ENCODED_LEN".equals(f.name))) {
 			return (long) "some-bytes".getBytes(StandardCharsets.UTF_8).length;
 		}
 		switch (f.kind) {
-			case U8:
-				return 2L;
-			case U16LE:
-				return 300L;
-			case S16LE:
-				return -123L;
-			case U32LE:
-				return 70000L;
-			case IPV4:
-				return new byte[] { 1, 2, 3, 4 };
-			case MAC6:
-				return new byte[] { 1, 2, 3, 4, 5, 6 };
-			case STRING:
-				return "hello";
-			case BYTES:
-				return "some-bytes".getBytes(StandardCharsets.UTF_8);
-			case REPEATED_STRING_TAIL:
-				return Arrays.asList("a.epi", "b.epi", "c.epi");
-			case REPEATED_U16LE_TAIL:
-				return Arrays.asList(100L, 200L, 300L);
-			default:
-				throw new IllegalStateException("no sample value for field kind " + f.kind);
+		case U8:
+			return 2L;
+		case U16LE:
+			return 300L;
+		case S16LE:
+			return -123L;
+		case U32LE:
+			return 70000L;
+		case IPV4:
+			return new byte[] { 1, 2, 3, 4 };
+		case MAC6:
+			return new byte[] { 1, 2, 3, 4, 5, 6 };
+		case STRING:
+			return "hello";
+		case BYTES:
+			return "some-bytes".getBytes(StandardCharsets.UTF_8);
+		case REPEATED_STRING_TAIL:
+			return Arrays.asList("a.epi", "b.epi", "c.epi");
+		case REPEATED_U16LE_TAIL:
+			return Arrays.asList(100L, 200L, 300L);
+		default:
+			throw new IllegalStateException("no sample value for field kind " + f.kind);
 		}
 	}
 }

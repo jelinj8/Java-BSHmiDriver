@@ -11,16 +11,18 @@ import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of FAST_CLEAR (doc/PROTOCOL.md §12.16) - the one §12
- * primitive that deliberately bypasses SET_CLIP_REGION/SET_DRAW_OFFSET/SET_ORIENTATION, requested
- * directly: "fast buffer filling with 1 or 0... skipping all clipping and mapping guards".
- * Confirms a full-panel BLACK and WHITE fill each read back correctly via READ_SCREEN at three
- * sampled points, and - the interesting case - that an active SET_CLIP_REGION set to a small
- * sub-rectangle beforehand does NOT constrain FAST_CLEAR at all: a point well outside that clip
- * still gets filled. Response payloads are RLE-decoded properly (READ_SCREEN's ENCODING byte is
- * not always RAW) - an earlier ad hoc version of this check skipped that and produced a false
- * "BLACK doesn't work" result, see design note 84. NOT part of the automated {@code mvn test}
- * suite - run it directly:
+ * Manual, real-hardware verification of FAST_CLEAR (doc/PROTOCOL.md §12.16) -
+ * the one §12 primitive that deliberately bypasses
+ * SET_CLIP_REGION/SET_DRAW_OFFSET/SET_ORIENTATION, requested directly: "fast
+ * buffer filling with 1 or 0... skipping all clipping and mapping guards".
+ * Confirms a full-panel BLACK and WHITE fill each read back correctly via
+ * READ_SCREEN at three sampled points, and - the interesting case - that an
+ * active SET_CLIP_REGION set to a small sub-rectangle beforehand does NOT
+ * constrain FAST_CLEAR at all: a point well outside that clip still gets
+ * filled. Response payloads are RLE-decoded properly (READ_SCREEN's ENCODING
+ * byte is not always RAW) - an earlier ad hoc version of this check skipped
+ * that and produced a false "BLACK doesn't work" result, see design note 84.
+ * NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -111,8 +113,8 @@ public final class FastClearManualCheck {
 		int encoding = p[0] & 0xFF;
 		int decodedLen = (int) readU32LE(p, 9);
 		int encodedLen = (int) readU32LE(p, 13);
-		byte[] decoded =
-				encoding == 0x00 ? Arrays.copyOfRange(p, 17, 17 + decodedLen) : rleDecode(p, 17, encodedLen, decodedLen);
+		byte[] decoded = encoding == 0x00 ? Arrays.copyOfRange(p, 17, 17 + decodedLen)
+				: rleDecode(p, 17, encodedLen, decodedLen);
 		boolean isBlack = (decoded[0] & 0x80) != 0;
 		check(label, isBlack == expectBlack);
 	}

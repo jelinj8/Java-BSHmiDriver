@@ -6,18 +6,21 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 /**
- * Reads {@link Frame}s one at a time out of a byte stream (doc/PROTOCOL.md §3.2/§3.3 - TCP and
- * Serial framing are identical: no chunking, PAYLOAD_LEN in the Logical Frame header is already a
- * length prefix). Shared by {@link TcpFrameTransport} and {@link SerialFrameTransport}.
+ * Reads {@link Frame}s one at a time out of a byte stream (doc/PROTOCOL.md
+ * §3.2/§3.3 - TCP and Serial framing are identical: no chunking, PAYLOAD_LEN in
+ * the Logical Frame header is already a length prefix). Shared by
+ * {@link TcpFrameTransport} and {@link SerialFrameTransport}.
  *
  * <p>
- * Resync policy: bytes that don't start with MAGIC are skipped (handles leading noise, e.g. from
- * connecting mid-stream). Once a full header is buffered, its declared PAYLOAD_LEN is trusted
- * (bounded by {@link #MAX_REASONABLE_PAYLOAD} as a sanity check) and that many bytes are read
- * before attempting to decode; if the resulting frame fails CRC (or the sanity bound was
- * exceeded), only the single leading MAGIC byte is dropped and scanning resumes from the next
- * byte - not the frame's full declared length, since a corrupted PAYLOAD_LEN can't be trusted to
- * skip the right number of bytes. Not thread-safe - one instance per stream, read from one thread.
+ * Resync policy: bytes that don't start with MAGIC are skipped (handles leading
+ * noise, e.g. from connecting mid-stream). Once a full header is buffered, its
+ * declared PAYLOAD_LEN is trusted (bounded by {@link #MAX_REASONABLE_PAYLOAD}
+ * as a sanity check) and that many bytes are read before attempting to decode;
+ * if the resulting frame fails CRC (or the sanity bound was exceeded), only the
+ * single leading MAGIC byte is dropped and scanning resumes from the next byte
+ * - not the frame's full declared length, since a corrupted PAYLOAD_LEN can't
+ * be trusted to skip the right number of bytes. Not thread-safe - one instance
+ * per stream, read from one thread.
  */
 final class FrameStreamReader {
 
@@ -32,7 +35,10 @@ final class FrameStreamReader {
 		this.in = in;
 	}
 
-	/** Blocks until one full frame has been read (and CRC-validated) or the stream closes. */
+	/**
+	 * Blocks until one full frame has been read (and CRC-validated) or the stream
+	 * closes.
+	 */
 	Frame readFrame() throws IOException {
 		while (true) {
 			Frame frame = tryParse();

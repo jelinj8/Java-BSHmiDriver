@@ -16,13 +16,15 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of FILL_IMAGE (doc/PROTOCOL.md §12.x): uploads one small,
- * deliberately asymmetric tile (a black square in the top-left corner of an otherwise white 12x12
- * cell) and fills three rectangles with it, one per TILE_MODE - a horizontal strip (a decorative
- * border), a vertical strip, and a full rectangle (a background pattern). Each target size is
- * deliberately NOT an exact multiple of the tile size, so the last tile in each run should appear
- * visibly cropped, not wrapped or skipped, proving the clip-based cropping works. NOT part of the
- * automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of FILL_IMAGE (doc/PROTOCOL.md §12.x):
+ * uploads one small, deliberately asymmetric tile (a black square in the
+ * top-left corner of an otherwise white 12x12 cell) and fills three rectangles
+ * with it, one per TILE_MODE - a horizontal strip (a decorative border), a
+ * vertical strip, and a full rectangle (a background pattern). Each target size
+ * is deliberately NOT an exact multiple of the tile size, so the last tile in
+ * each run should appear visibly cropped, not wrapped or skipped, proving the
+ * clip-based cropping works. NOT part of the automated {@code mvn test} suite -
+ * run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -55,8 +57,8 @@ public final class FillImageManualCheck {
 					+ " bytes)");
 			upload(client, TILE_PATH, tile);
 
-			System.out.println("-> FILL_IMAGE HORIZONTAL at (20,20), WIDTH=100 (not a multiple of "
-					+ TILE_SIZE + " - last tile should be cropped)");
+			System.out.println("-> FILL_IMAGE HORIZONTAL at (20,20), WIDTH=100 (not a multiple of " + TILE_SIZE
+					+ " - last tile should be cropped)");
 			fill(client, 20, 20, 100, 0, FillTileMode.HORIZONTAL);
 
 			System.out.println("-> FILL_IMAGE VERTICAL at (20,50), HEIGHT=80 (not a multiple of " + TILE_SIZE
@@ -84,7 +86,10 @@ public final class FillImageManualCheck {
 		}
 	}
 
-	/** A 12x12 white cell with a 6x6 black square in the top-left corner - deliberately asymmetric. */
+	/**
+	 * A 12x12 white cell with a 6x6 black square in the top-left corner -
+	 * deliberately asymmetric.
+	 */
 	private static BufferedImage buildTile() {
 		BufferedImage image = new BufferedImage(TILE_SIZE, TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
 		for (int y = 0; y < TILE_SIZE; y++) {
@@ -98,8 +103,8 @@ public final class FillImageManualCheck {
 
 	private static void upload(CommandClient client, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.INTERNAL);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);
@@ -108,8 +113,7 @@ public final class FillImageManualCheck {
 		send(client, CommandId.FILE_UPLOAD, payload.array());
 	}
 
-	private static void fill(CommandClient client, int x, int y, int width, int height, int tileMode)
-			throws Exception {
+	private static void fill(CommandClient client, int x, int y, int width, int height, int tileMode) throws Exception {
 		byte[] pathBytes = TILE_PATH.getBytes(StandardCharsets.UTF_8);
 		ByteBuffer payload = ByteBuffer.allocate(13 + pathBytes.length).order(ByteOrder.LITTLE_ENDIAN);
 		payload.putShort((short) x);

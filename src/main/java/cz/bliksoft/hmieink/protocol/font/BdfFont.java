@@ -9,23 +9,29 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Parses a BDF (Glyph Bitmap Distribution Format) bitmap font - e.g. Terminus Font
- * (terminus-font.sourceforge.net, OFL 1.1) - directly into {@link RasterGlyph}s for the same
- * {@code .gly} pipeline {@link GlyphGenerator}'s TTF path feeds (doc/PROTOCOL.md §12.6.1). Unlike a
- * TTF, a BDF glyph is already exact 1bpp pixel data - no antialiasing/rasterization/thresholding
- * happens or is needed anywhere in this class; {@link #renderGlyph} only repositions each glyph's
- * own bounding box into a shared {@code cellHeight}-tall canvas (by its {@code BBX} y-offset
- * relative to the font's baseline, mirroring how {@link GlyphGenerator#renderGlyph} positions a TTF
- * glyph at its own baseline via {@code Graphics2D.drawString}) and applies the same "trim blank rows
- * off the top only" rule {@link GlyphGenerator}'s own class doc explains (what makes device-side
- * bottom-alignment correct for descenders without any baseline metadata in the wire format).
+ * Parses a BDF (Glyph Bitmap Distribution Format) bitmap font - e.g. Terminus
+ * Font (terminus-font.sourceforge.net, OFL 1.1) - directly into
+ * {@link RasterGlyph}s for the same {@code .gly} pipeline
+ * {@link GlyphGenerator}'s TTF path feeds (doc/PROTOCOL.md §12.6.1). Unlike a
+ * TTF, a BDF glyph is already exact 1bpp pixel data - no
+ * antialiasing/rasterization/thresholding happens or is needed anywhere in this
+ * class; {@link #renderGlyph} only repositions each glyph's own bounding box
+ * into a shared {@code cellHeight}-tall canvas (by its {@code BBX} y-offset
+ * relative to the font's baseline, mirroring how
+ * {@link GlyphGenerator#renderGlyph} positions a TTF glyph at its own baseline
+ * via {@code Graphics2D.drawString}) and applies the same "trim blank rows off
+ * the top only" rule {@link GlyphGenerator}'s own class doc explains (what
+ * makes device-side bottom-alignment correct for descenders without any
+ * baseline metadata in the wire format).
  *
  * <p>
- * Only as much of the BDF spec as real-world monospace ("character cell", {@code SPACING "C"})
- * fonts actually use is implemented: {@code FONT_ASCENT}/{@code FONT_DESCENT}/{@code DEFAULT_CHAR}
- * properties, and {@code STARTCHAR}/{@code ENCODING}/{@code DWIDTH}/{@code BBX}/{@code BITMAP}/
- * {@code ENDCHAR} per glyph - no XLFD font-name parsing, no {@code SWIDTH} (unused - {@code DWIDTH}
- * is the real pixel advance), no vertical-writing fields.
+ * Only as much of the BDF spec as real-world monospace ("character cell",
+ * {@code SPACING "C"}) fonts actually use is implemented:
+ * {@code FONT_ASCENT}/{@code FONT_DESCENT}/{@code DEFAULT_CHAR} properties, and
+ * {@code STARTCHAR}/{@code ENCODING}/{@code DWIDTH}/{@code BBX}/{@code BITMAP}/
+ * {@code ENDCHAR} per glyph - no XLFD font-name parsing, no {@code SWIDTH}
+ * (unused - {@code DWIDTH} is the real pixel advance), no vertical-writing
+ * fields.
  */
 public final class BdfFont {
 
@@ -54,8 +60,10 @@ public final class BdfFont {
 	}
 
 	public static BdfFont load(Path bdfFile) throws IOException {
-		// BDF is a plain-ASCII text format (the spec allows ISO-8859-1 in STARTPROPERTIES string
-		// values, never used by the fields this parser reads) - ISO_8859_1 decodes every byte
+		// BDF is a plain-ASCII text format (the spec allows ISO-8859-1 in
+		// STARTPROPERTIES string
+		// values, never used by the fields this parser reads) - ISO_8859_1 decodes
+		// every byte
 		// without throwing, which plain US-ASCII content round-trips through unchanged.
 		List<String> lines = Files.readAllLines(bdfFile, StandardCharsets.ISO_8859_1);
 		int ascent = -1;
@@ -128,13 +136,15 @@ public final class BdfFont {
 	}
 
 	/**
-	 * Renders one codepoint into the same "canvas" contract {@link GlyphGenerator#renderGlyph}
-	 * produces: {@code cellHeight} tall, {@code fixedWidth} wide if {@code >0} else this glyph's own
-	 * {@code DWIDTH}, its bits blitted at their correct baseline-relative row/column, trimmed from
-	 * the top only when {@code trimTop}. Throws if this font doesn't cover {@code codepoint} - check
-	 * {@link #hasGlyph} first (callers generating a whole set should skip an uncovered codepoint
-	 * rather than force some substitute, letting the device's own {@code XX} fallback handle it -
-	 * see {@link GlyphGenerator#generateGlyphSet(BdfFont, Map, int, int, Path)}).
+	 * Renders one codepoint into the same "canvas" contract
+	 * {@link GlyphGenerator#renderGlyph} produces: {@code cellHeight} tall,
+	 * {@code fixedWidth} wide if {@code >0} else this glyph's own {@code DWIDTH},
+	 * its bits blitted at their correct baseline-relative row/column, trimmed from
+	 * the top only when {@code trimTop}. Throws if this font doesn't cover
+	 * {@code codepoint} - check {@link #hasGlyph} first (callers generating a whole
+	 * set should skip an uncovered codepoint rather than force some substitute,
+	 * letting the device's own {@code XX} fallback handle it - see
+	 * {@link GlyphGenerator#generateGlyphSet(BdfFont, Map, int, int, Path)}).
 	 */
 	public RasterGlyph renderGlyph(int codepoint, int fixedWidth, boolean trimTop) {
 		Glyph glyph = glyphsByCodepoint.get(codepoint);
@@ -147,9 +157,12 @@ public final class BdfFont {
 		int bytesPerRow = (canvasWidth + 7) / 8;
 		byte[] canvas = new byte[bytesPerRow * cellHeight];
 
-		// BBX's yoff is the glyph bitmap's bottom-left corner's offset from the baseline (positive =
-		// above it, negative = below, e.g. a descender) - so its top row sits (yoff+bbh) rows above
-		// the baseline; canvas row 0 is the cell's top, `ascent` rows above the baseline.
+		// BBX's yoff is the glyph bitmap's bottom-left corner's offset from the
+		// baseline (positive =
+		// above it, negative = below, e.g. a descender) - so its top row sits
+		// (yoff+bbh) rows above
+		// the baseline; canvas row 0 is the cell's top, `ascent` rows above the
+		// baseline.
 		int glyphTopCanvasRow = ascent - (glyph.yoff + glyph.bbh);
 		int glyphBytesPerRow = (glyph.bbw + 7) / 8;
 		for (int row = 0; row < glyph.bbh; row++) {
@@ -177,8 +190,10 @@ public final class BdfFont {
 		return new RasterGlyph(canvasWidth, glyphHeight, trimmed);
 	}
 
-	/** The {@code XX} fallback/line-height-reference glyph - see {@link GlyphGenerator}'s class doc for why
-	 * it's untrimmed. */
+	/**
+	 * The {@code XX} fallback/line-height-reference glyph - see
+	 * {@link GlyphGenerator}'s class doc for why it's untrimmed.
+	 */
 	public RasterGlyph renderFallbackGlyph(int fallbackCodepoint, int fixedWidth) {
 		return renderGlyph(fallbackCodepoint, fixedWidth, false);
 	}

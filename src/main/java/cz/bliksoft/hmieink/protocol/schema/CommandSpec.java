@@ -5,11 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * One command's shape: its {@code COMMAND_ID}, symbolic name (matches {@code CommandId}'s own
- * constant name), field layout in wire order, and whether a caller can send it. {@code
- * sendable=false} marks a device→PC-only command (a response or an unsolicited event) - included
- * in {@link CommandSchema} purely so {@code HmiDevice#describe} can render it, never something a
- * caller constructs and sends.
+ * One command's shape: its {@code COMMAND_ID}, symbolic name (matches
+ * {@code CommandId}'s own constant name), field layout in wire order, and
+ * whether a caller can send it. {@code
+ * sendable=false} marks a device→PC-only command (a response or an unsolicited
+ * event) - included in {@link CommandSchema} purely so
+ * {@code HmiDevice#describe} can render it, never something a caller constructs
+ * and sends.
  */
 public final class CommandSpec {
 

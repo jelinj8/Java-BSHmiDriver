@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * What one {@link FolderSync#sync} run did, per relative path. Every list holds relative paths
- * (forward-slash-separated); {@link #toString} renders a short human-readable summary suitable for
- * CLI output.
+ * What one {@link FolderSync#sync} run did, per relative path. Every list holds
+ * relative paths (forward-slash-separated); {@link #toString} renders a short
+ * human-readable summary suitable for CLI output.
  */
 public final class SyncResult {
 
@@ -16,12 +16,15 @@ public final class SyncResult {
 	public final List<String> deletedRemote = new ArrayList<>();
 	public final List<String> unchanged = new ArrayList<>();
 
-	/** MERGE mode only: paths changed differently on both sides since the last sync - left untouched. */
+	/**
+	 * MERGE mode only: paths changed differently on both sides since the last sync
+	 * - left untouched.
+	 */
 	public final List<String> conflicted = new ArrayList<>();
 
 	/**
-	 * Local subdirectories that were not synced because the remote side doesn't support real
-	 * subdirectories (VOLUME=PSRAM, doc/PROTOCOL.md §14).
+	 * Local subdirectories that were not synced because the remote side doesn't
+	 * support real subdirectories (VOLUME=PSRAM, doc/PROTOCOL.md §14).
 	 */
 	public final List<String> skippedLocalDirectories = new ArrayList<>();
 

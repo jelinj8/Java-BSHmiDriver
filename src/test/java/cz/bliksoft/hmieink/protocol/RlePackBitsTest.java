@@ -54,7 +54,8 @@ class RlePackBitsTest {
 	void encodesLongRunCompactly() {
 		byte[] data = new byte[15000];
 		byte[] encoded = RlePackBits.encode(data);
-		// Repeat runs cap at 129 bytes/packet (2 wire bytes each): ceil(15000/129) * 2 = 234.
+		// Repeat runs cap at 129 bytes/packet (2 wire bytes each): ceil(15000/129) * 2
+		// = 234.
 		int expected = (int) Math.ceil(data.length / 129.0) * 2;
 		assertEquals(expected, encoded.length);
 		assertArrayEquals(data, RlePackBits.decode(encoded, data.length));

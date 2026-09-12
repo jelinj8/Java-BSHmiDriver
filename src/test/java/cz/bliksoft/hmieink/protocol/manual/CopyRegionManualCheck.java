@@ -12,10 +12,11 @@ import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of COPY_REGION (doc/PROTOCOL.md §12.11): draws one filled
- * circle, then copies its bounding box to two other locations without redrawing it - proving
- * content can be duplicated ("copy + paste") rather than resent from the PC. NOT part of the
- * automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of COPY_REGION (doc/PROTOCOL.md §12.11):
+ * draws one filled circle, then copies its bounding box to two other locations
+ * without redrawing it - proving content can be duplicated ("copy + paste")
+ * rather than resent from the PC. NOT part of the automated {@code mvn test}
+ * suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -63,8 +64,7 @@ public final class CopyRegionManualCheck {
 		}
 	}
 
-	private static void drawFilledCircle(CommandClient client, int centerX, int centerY, int radius)
-			throws Exception {
+	private static void drawFilledCircle(CommandClient client, int centerX, int centerY, int radius) throws Exception {
 		ByteBuffer payload = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN);
 		payload.putShort((short) centerX);
 		payload.putShort((short) centerY);

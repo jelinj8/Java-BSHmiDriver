@@ -11,7 +11,10 @@ import java.util.Set;
 
 import cz.bliksoft.hmieink.protocol.FileEntry;
 
-/** In-memory {@link RemoteFileStore} fake so {@link FolderSyncTest} needs no real device/transport. */
+/**
+ * In-memory {@link RemoteFileStore} fake so {@link FolderSyncTest} needs no
+ * real device/transport.
+ */
 final class FakeRemoteFileStore implements RemoteFileStore {
 
 	private final Map<String, byte[]> files = new LinkedHashMap<>();

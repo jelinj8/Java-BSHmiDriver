@@ -1,8 +1,8 @@
 package cz.bliksoft.hmieink.protocol;
 
 /**
- * READ_SCREEN's MODE byte (doc/PROTOCOL.md §8). Mirrors firmware's {@code Protocol.h}
- * {@code readScreenMode} namespace - keep both in sync.
+ * READ_SCREEN's MODE byte (doc/PROTOCOL.md §8). Mirrors firmware's
+ * {@code Protocol.h} {@code readScreenMode} namespace - keep both in sync.
  */
 public final class ReadScreenMode {
 

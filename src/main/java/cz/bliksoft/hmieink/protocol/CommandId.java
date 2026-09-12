@@ -1,8 +1,8 @@
 package cz.bliksoft.hmieink.protocol;
 
 /**
- * Command IDs (doc/PROTOCOL.md §4). Mirrors firmware's {@code Protocol.h} {@code cmd} namespace -
- * keep both in sync.
+ * Command IDs (doc/PROTOCOL.md §4). Mirrors firmware's {@code Protocol.h}
+ * {@code cmd} namespace - keep both in sync.
  */
 public final class CommandId {
 

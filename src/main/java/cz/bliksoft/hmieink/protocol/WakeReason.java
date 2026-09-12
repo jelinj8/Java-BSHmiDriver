@@ -2,8 +2,8 @@ package cz.bliksoft.hmieink.protocol;
 
 /**
  * Shared by {@code POWER_STATUS_RESPONSE.LAST_WAKE_REASON} and the handshake's
- * {@code LAST_WAKE_REASON} capability TLV (doc/PROTOCOL.md §17.2, §5.2). Mirrors firmware's
- * {@code Protocol.h} {@code wakeReason} namespace.
+ * {@code LAST_WAKE_REASON} capability TLV (doc/PROTOCOL.md §17.2, §5.2).
+ * Mirrors firmware's {@code Protocol.h} {@code wakeReason} namespace.
  */
 public final class WakeReason {
 

@@ -6,8 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- * Spot-checks a few constants against doc/PROTOCOL.md so a future edit that touches one side
- * (Java or firmware) but not the other, or not the doc, is more likely to be noticed.
+ * Spot-checks a few constants against doc/PROTOCOL.md so a future edit that
+ * touches one side (Java or firmware) but not the other, or not the doc, is
+ * more likely to be noticed.
  */
 class CommandIdTest {
 

@@ -13,12 +13,14 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.ShiftDirection;
 
 /**
- * Manual, real-hardware verification of SHIFT_REGION (doc/PROTOCOL.md §12.9): draws four black
- * vertical stripes at X=0/100/200/300, refreshes to show them, then shifts the whole panel LEFT by
- * 50px with a white fill and refreshes again. Each surviving stripe should visibly move 50px to
- * the left (the stripe at X=0 should vanish off the left edge, and a new white strip should appear
- * at the right edge) - proving content moved without being resent, and the vacated area was
- * correctly filled. NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of SHIFT_REGION (doc/PROTOCOL.md §12.9):
+ * draws four black vertical stripes at X=0/100/200/300, refreshes to show them,
+ * then shifts the whole panel LEFT by 50px with a white fill and refreshes
+ * again. Each surviving stripe should visibly move 50px to the left (the stripe
+ * at X=0 should vanish off the left edge, and a new white strip should appear
+ * at the right edge) - proving content moved without being resent, and the
+ * vacated area was correctly filled. NOT part of the automated {@code mvn test}
+ * suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -55,15 +57,14 @@ public final class ShiftRegionManualCheck {
 			System.out.println("-> sending REFRESH(MODE=0x01) - four vertical stripes should appear");
 			refresh(client, 0x01);
 
-			System.out.println("-> SHIFT_REGION: whole panel, LEFT, step=" + SHIFT_STEP
-					+ ", fill=WHITE, deferred");
+			System.out.println("-> SHIFT_REGION: whole panel, LEFT, step=" + SHIFT_STEP + ", fill=WHITE, deferred");
 			shiftWholePanel(client);
 			System.out.println("-> sending REFRESH(MODE=0x01) - stripes should have moved " + SHIFT_STEP
 					+ "px left; the x=0 stripe should be gone, a white strip should appear on the right");
 			refresh(client, 0x01);
 
-			System.out.println("OK: check the panel for three remaining stripes, each shifted "
-					+ SHIFT_STEP + "px left, with a blank strip on the right edge");
+			System.out.println("OK: check the panel for three remaining stripes, each shifted " + SHIFT_STEP
+					+ "px left, with a blank strip on the right edge");
 		} finally {
 			client.close();
 		}

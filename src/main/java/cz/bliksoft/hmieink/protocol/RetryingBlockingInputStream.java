@@ -7,15 +7,18 @@ import java.io.InterruptedIOException;
 import com.fazecast.jSerialComm.SerialPortTimeoutException;
 
 /**
- * Wraps a jSerialComm {@code InputStream} to present a normal indefinitely-blocking stream to
- * {@link FrameStreamReader}, working around a real-hardware-observed quirk: jSerialComm's
- * {@code TIMEOUT_READ_BLOCKING} mode intermittently returned -1 (interpreted as stream EOF) on
- * this CH340 adapter on Windows, while {@code TIMEOUT_READ_SEMI_BLOCKING} with a finite per-call
- * timeout reliably delivered data - just via a {@link SerialPortTimeoutException} instead of a
- * plain 0 whenever a single read call's timeout elapses with nothing available. This class
- * retries past that exception (it's not a real error, just "nothing arrived in the last N ms"),
- * so from {@link FrameStreamReader}'s point of view this still just blocks until data or a real
- * I/O error. See {@link SerialFrameTransport} for where it's used.
+ * Wraps a jSerialComm {@code InputStream} to present a normal
+ * indefinitely-blocking stream to {@link FrameStreamReader}, working around a
+ * real-hardware-observed quirk: jSerialComm's {@code TIMEOUT_READ_BLOCKING}
+ * mode intermittently returned -1 (interpreted as stream EOF) on this CH340
+ * adapter on Windows, while {@code TIMEOUT_READ_SEMI_BLOCKING} with a finite
+ * per-call timeout reliably delivered data - just via a
+ * {@link SerialPortTimeoutException} instead of a plain 0 whenever a single
+ * read call's timeout elapses with nothing available. This class retries past
+ * that exception (it's not a real error, just "nothing arrived in the last N
+ * ms"), so from {@link FrameStreamReader}'s point of view this still just
+ * blocks until data or a real I/O error. See {@link SerialFrameTransport} for
+ * where it's used.
  */
 final class RetryingBlockingInputStream extends InputStream {
 
@@ -32,7 +35,8 @@ final class RetryingBlockingInputStream extends InputStream {
 			try {
 				return delegate.read();
 			} catch (SerialPortTimeoutException e) {
-				// no data within this port's configured per-call read timeout - not a real error
+				// no data within this port's configured per-call read timeout - not a real
+				// error
 			}
 		}
 	}

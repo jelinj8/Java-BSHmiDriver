@@ -10,13 +10,15 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.WakeReason;
 
 /**
- * Manual, real-hardware verification of SET_POWER_MODE / POWER_STATUS_REQUEST (doc/PROTOCOL.md
- * §17). Exercises the two live-testable wake paths - LOW_POWER's timer and Serial-activity wake -
- * over the Serial transport itself, so the same connection can observe the device coming back.
- * HARD_SLEEP (deep sleep) is NOT exercised here: it reboots the MCU, which would drop this test's
- * own Serial connection and needs a fresh {@code connect()} afterward to observe - left as a
- * visual/manual step for the user to confirm separately if wanted, per the note printed at the end.
- * NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of SET_POWER_MODE / POWER_STATUS_REQUEST
+ * (doc/PROTOCOL.md §17). Exercises the two live-testable wake paths -
+ * LOW_POWER's timer and Serial-activity wake - over the Serial transport
+ * itself, so the same connection can observe the device coming back. HARD_SLEEP
+ * (deep sleep) is NOT exercised here: it reboots the MCU, which would drop this
+ * test's own Serial connection and needs a fresh {@code connect()} afterward to
+ * observe - left as a visual/manual step for the user to confirm separately if
+ * wanted, per the note printed at the end. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -46,7 +48,8 @@ public final class PowerManagementManualCheck {
 			HandshakeCapabilities baselineCaps = HandshakeCapabilities
 					.parse(client.send(CommandId.HANDSHAKE_REQUEST, new byte[] { 0, 0 }).getPayload());
 			int baselineWakeReason = baselineCaps.getLastWakeReason();
-			System.out.println("baseline HANDSHAKE_RESPONSE.LAST_WAKE_REASON=" + describeWakeReason(baselineWakeReason));
+			System.out
+					.println("baseline HANDSHAKE_RESPONSE.LAST_WAKE_REASON=" + describeWakeReason(baselineWakeReason));
 
 			int[] status = readPowerStatus(client);
 			System.out.println("baseline POWER_STATUS_RESPONSE: CURRENT_MODE=" + status[0] + " LAST_WAKE_REASON="
@@ -69,10 +72,10 @@ public final class PowerManagementManualCheck {
 					+ "happens before sleeping, per §17.1)");
 
 			Thread.sleep(4500); // WAKE_AFTER_MS + margin - no wake preamble needed, it already woke
-								 // itself via the timer, not UART activity
+								// itself via the timer, not UART activity
 			int[] afterTimer = readPowerStatus(client);
-			System.out.println("   POWER_STATUS_RESPONSE after timer wake: LAST_WAKE_REASON="
-					+ describeWakeReason(afterTimer[1]));
+			System.out.println(
+					"   POWER_STATUS_RESPONSE after timer wake: LAST_WAKE_REASON=" + describeWakeReason(afterTimer[1]));
 			check("woke via LOW_POWER_TIMER", afterTimer[1] == WakeReason.LOW_POWER_TIMER);
 
 			System.out.println(
@@ -111,29 +114,28 @@ public final class PowerManagementManualCheck {
 	}
 
 	private static byte[] buildSetPowerModePayload(int mode, int flags, long wakeAfterMs, int wakeButton) {
-		return new byte[] { (byte) mode, (byte) flags, (byte) (wakeAfterMs & 0xFF),
-				(byte) ((wakeAfterMs >> 8) & 0xFF), (byte) ((wakeAfterMs >> 16) & 0xFF),
-				(byte) ((wakeAfterMs >> 24) & 0xFF), (byte) wakeButton };
+		return new byte[] { (byte) mode, (byte) flags, (byte) (wakeAfterMs & 0xFF), (byte) ((wakeAfterMs >> 8) & 0xFF),
+				(byte) ((wakeAfterMs >> 16) & 0xFF), (byte) ((wakeAfterMs >> 24) & 0xFF), (byte) wakeButton };
 	}
 
 	private static String describeWakeReason(int reason) {
 		switch (reason) {
-			case WakeReason.POWER_ON:
-				return "POWER_ON (0x" + Integer.toHexString(reason) + ")";
-			case WakeReason.HARD_SLEEP_TIMER:
-				return "HARD_SLEEP_TIMER (0x" + Integer.toHexString(reason) + ")";
-			case WakeReason.HARD_SLEEP_BUTTON:
-				return "HARD_SLEEP_BUTTON (0x" + Integer.toHexString(reason) + ")";
-			case WakeReason.HARD_SLEEP_EXTERNAL_RESET:
-				return "HARD_SLEEP_EXTERNAL_RESET (0x" + Integer.toHexString(reason) + ")";
-			case WakeReason.LOW_POWER_TIMER:
-				return "LOW_POWER_TIMER (0x" + Integer.toHexString(reason) + ")";
-			case WakeReason.LOW_POWER_SERIAL_ACTIVITY:
-				return "LOW_POWER_SERIAL_ACTIVITY (0x" + Integer.toHexString(reason) + ")";
-			case WakeReason.LOW_POWER_BLE_ACTIVITY:
-				return "LOW_POWER_BLE_ACTIVITY (0x" + Integer.toHexString(reason) + ")";
-			default:
-				return "0x" + Integer.toHexString(reason);
+		case WakeReason.POWER_ON:
+			return "POWER_ON (0x" + Integer.toHexString(reason) + ")";
+		case WakeReason.HARD_SLEEP_TIMER:
+			return "HARD_SLEEP_TIMER (0x" + Integer.toHexString(reason) + ")";
+		case WakeReason.HARD_SLEEP_BUTTON:
+			return "HARD_SLEEP_BUTTON (0x" + Integer.toHexString(reason) + ")";
+		case WakeReason.HARD_SLEEP_EXTERNAL_RESET:
+			return "HARD_SLEEP_EXTERNAL_RESET (0x" + Integer.toHexString(reason) + ")";
+		case WakeReason.LOW_POWER_TIMER:
+			return "LOW_POWER_TIMER (0x" + Integer.toHexString(reason) + ")";
+		case WakeReason.LOW_POWER_SERIAL_ACTIVITY:
+			return "LOW_POWER_SERIAL_ACTIVITY (0x" + Integer.toHexString(reason) + ")";
+		case WakeReason.LOW_POWER_BLE_ACTIVITY:
+			return "LOW_POWER_BLE_ACTIVITY (0x" + Integer.toHexString(reason) + ")";
+		default:
+			return "0x" + Integer.toHexString(reason);
 		}
 	}
 

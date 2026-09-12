@@ -10,11 +10,12 @@ import cz.bliksoft.hmieink.protocol.HandshakeCapabilities;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification that the onboard status LED (IO41, {@code board::kPinStatusLed})
- * is PC-controllable via §15 GPIO commands, requiring no external LED/wiring - see doc/PROTOCOL.md
- * design note 43 (recorded but not wired to anything) and design note 66's follow-up (now added to
- * {@code board::kAvailableGpioPins[]}). NOT part of the automated {@code mvn test} suite - run it
- * directly:
+ * Manual, real-hardware verification that the onboard status LED (IO41,
+ * {@code board::kPinStatusLed}) is PC-controllable via §15 GPIO commands,
+ * requiring no external LED/wiring - see doc/PROTOCOL.md design note 43
+ * (recorded but not wired to anything) and design note 66's follow-up (now
+ * added to {@code board::kAvailableGpioPins[]}). NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -85,8 +86,8 @@ public final class StatusLedManualCheck {
 			byte[] p = response.getPayload();
 			int value = p[1] & 0xFF;
 			if (value != 0) {
-				System.err.println("FAIL: expected PIN_ID=" + STATUS_LED_PIN + " to end LOW after the pattern, was "
-						+ value);
+				System.err.println(
+						"FAIL: expected PIN_ID=" + STATUS_LED_PIN + " to end LOW after the pattern, was " + value);
 				System.exit(1);
 			}
 			System.out.println("OK: pattern finished, pin ended LOW as required by spec");

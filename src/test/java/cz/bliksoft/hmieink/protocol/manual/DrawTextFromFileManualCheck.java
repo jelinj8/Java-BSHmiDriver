@@ -17,13 +17,15 @@ import cz.bliksoft.hmieink.protocol.TextBackground;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of DRAW_TEXT's FLAGS.TEXT_IS_PATH volume-prefix convention
- * (doc/PROTOCOL.md §12.6): since DRAW_TEXT's own payload has no VOLUME field, the volume is instead
- * selected by an optional "R:"/"S:"/"F:" prefix on TEXT itself (PSRAM/SD/INTERNAL), stripped before
- * the rest is used as the path - no prefix defaults to PSRAM. Writes a distinct label to each
- * volume, then draws one line per volume using its prefix, plus a final line with no prefix at all
- * (should also read the PSRAM label, confirming the default). VOLUME=SD is skipped (with a
- * warning, not a failure) if STORAGE_INFO reports no card present. NOT part of the automated
+ * Manual, real-hardware verification of DRAW_TEXT's FLAGS.TEXT_IS_PATH
+ * volume-prefix convention (doc/PROTOCOL.md §12.6): since DRAW_TEXT's own
+ * payload has no VOLUME field, the volume is instead selected by an optional
+ * "R:"/"S:"/"F:" prefix on TEXT itself (PSRAM/SD/INTERNAL), stripped before the
+ * rest is used as the path - no prefix defaults to PSRAM. Writes a distinct
+ * label to each volume, then draws one line per volume using its prefix, plus a
+ * final line with no prefix at all (should also read the PSRAM label,
+ * confirming the default). VOLUME=SD is skipped (with a warning, not a failure)
+ * if STORAGE_INFO reports no card present. NOT part of the automated
  * {@code mvn test} suite - run it directly:
  *
  * <pre>
@@ -76,8 +78,8 @@ public final class DrawTextFromFileManualCheck {
 			System.out.println("-> DRAW_TEXT TEXT=\"F:/flash_label.txt\" at y=" + y);
 			drawTextByPath(client, y, "F:/flash_label.txt");
 			y += 20;
-			System.out.println("-> DRAW_TEXT TEXT=\"/psram_label.txt\" (no prefix - should default to PSRAM) at y="
-					+ y);
+			System.out
+					.println("-> DRAW_TEXT TEXT=\"/psram_label.txt\" (no prefix - should default to PSRAM) at y=" + y);
 			drawTextByPath(client, y, "/psram_label.txt");
 
 			System.out.println("-> sending REFRESH(MODE=0x01)");
@@ -103,8 +105,8 @@ public final class DrawTextFromFileManualCheck {
 	private static void upload(CommandClient client, int volume, String path, String content) throws Exception {
 		byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + contentBytes.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + contentBytes.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) volume);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

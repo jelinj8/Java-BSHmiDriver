@@ -17,15 +17,17 @@ import cz.bliksoft.hmieink.protocol.TextAlign;
 import cz.bliksoft.hmieink.protocol.TextBackground;
 
 /**
- * Manual, real-hardware verification of SET_ORIENTATION (doc/PROTOCOL.md §12.12): draws a short
- * text label at the exact same small logical anchor (10,10) under each of the four ROTATION
- * values in turn. Because rotation maps a fixed logical point to a different physical corner each
- * time (see WorkingBuffer::toPhysical()'s formulas), the four labels should appear near four
- * different physical corners without any manual placement math, and each should itself be visibly
- * rotated in place (every glyph pixel goes through the same logical-&gt;physical mapping, not just
- * the anchor). Then exercises MIRROR_H/MIRROR_V (at ROTATE_0) with three more labels at distinct
- * anchors. Resets to ROTATE_0/no mirror at the end. NOT part of the automated {@code mvn test}
- * suite - run it directly:
+ * Manual, real-hardware verification of SET_ORIENTATION (doc/PROTOCOL.md
+ * §12.12): draws a short text label at the exact same small logical anchor
+ * (10,10) under each of the four ROTATION values in turn. Because rotation maps
+ * a fixed logical point to a different physical corner each time (see
+ * WorkingBuffer::toPhysical()'s formulas), the four labels should appear near
+ * four different physical corners without any manual placement math, and each
+ * should itself be visibly rotated in place (every glyph pixel goes through the
+ * same logical-&gt;physical mapping, not just the anchor). Then exercises
+ * MIRROR_H/MIRROR_V (at ROTATE_0) with three more labels at distinct anchors.
+ * Resets to ROTATE_0/no mirror at the end. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \

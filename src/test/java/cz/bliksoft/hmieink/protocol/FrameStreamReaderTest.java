@@ -39,8 +39,9 @@ class FrameStreamReaderTest {
 
 	@Test
 	void handlesFragmentedDelivery() throws IOException {
-		byte[] wire = new Frame(CommandId.DRAW_LINE, 5, new byte[] {1, 2, 3, 4, 5}).encode();
-		// Deliver one byte at a time to exercise the "not enough bytes yet" path repeatedly.
+		byte[] wire = new Frame(CommandId.DRAW_LINE, 5, new byte[] { 1, 2, 3, 4, 5 }).encode();
+		// Deliver one byte at a time to exercise the "not enough bytes yet" path
+		// repeatedly.
 		FrameStreamReader reader = new FrameStreamReader(new OneByteAtATimeInputStream(wire));
 
 		Frame frame = reader.readFrame();
@@ -50,7 +51,7 @@ class FrameStreamReaderTest {
 
 	@Test
 	void skipsLeadingGarbageBeforeMagic() throws IOException {
-		byte[] garbage = {0x00, 0x11, 0x22, (byte) 0xFF};
+		byte[] garbage = { 0x00, 0x11, 0x22, (byte) 0xFF };
 		byte[] wire = new Frame(CommandId.ACK, 0, null).encode();
 		FrameStreamReader reader = new FrameStreamReader(new ByteArrayInputStream(concat(garbage, wire)));
 
@@ -60,7 +61,7 @@ class FrameStreamReaderTest {
 
 	@Test
 	void resyncsPastACorruptedFrameToTheNextValidOne() throws IOException {
-		byte[] corrupted = new Frame(CommandId.NACK, 3, new byte[] {9, 9, 9}).encode();
+		byte[] corrupted = new Frame(CommandId.NACK, 3, new byte[] { 9, 9, 9 }).encode();
 		corrupted[corrupted.length - 1] ^= 0xFF; // flip a CRC byte
 		byte[] good = new Frame(CommandId.HANDSHAKE_RESPONSE, 4, null).encode();
 		FrameStreamReader reader = new FrameStreamReader(new ByteArrayInputStream(concat(corrupted, good)));
@@ -72,7 +73,7 @@ class FrameStreamReaderTest {
 
 	@Test
 	void throwsEofWhenStreamClosesMidFrame() {
-		byte[] wire = new Frame(CommandId.DRAW_RECT, 0, new byte[] {1, 2, 3}).encode();
+		byte[] wire = new Frame(CommandId.DRAW_RECT, 0, new byte[] { 1, 2, 3 }).encode();
 		byte[] truncated = java.util.Arrays.copyOf(wire, wire.length - 2);
 		FrameStreamReader reader = new FrameStreamReader(new ByteArrayInputStream(truncated));
 
@@ -86,7 +87,10 @@ class FrameStreamReaderTest {
 		return out;
 	}
 
-	/** Forces FrameStreamReader through its "need more bytes" path on every single byte. */
+	/**
+	 * Forces FrameStreamReader through its "need more bytes" path on every single
+	 * byte.
+	 */
 	private static final class OneByteAtATimeInputStream extends InputStream {
 		private final byte[] data;
 		private int pos = 0;

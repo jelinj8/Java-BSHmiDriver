@@ -12,11 +12,12 @@ import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of the local drawing primitives (doc/PROTOCOL.md §12.2-§12.5)
- * - plan.md's Phase 2: sends a filled rect, an XOR-overlapping rect (proving per-pixel compositing,
- * not just REPLACE), an outline circle, a filled circle, and a thick diagonal line, all deferred
- * (FLAGS.REFRESH_NOW=0), then a single REFRESH(MODE=0x01) to show everything at once. NOT part of
- * the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of the local drawing primitives
+ * (doc/PROTOCOL.md §12.2-§12.5) - plan.md's Phase 2: sends a filled rect, an
+ * XOR-overlapping rect (proving per-pixel compositing, not just REPLACE), an
+ * outline circle, a filled circle, and a thick diagonal line, all deferred
+ * (FLAGS.REFRESH_NOW=0), then a single REFRESH(MODE=0x01) to show everything at
+ * once. NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -44,9 +45,8 @@ public final class DrawPrimitivesManualCheck {
 			System.out.println("-> DRAW_RECT filled black (20,20,100,60), REPLACE, deferred");
 			drawRect(client, 20, 20, 100, 60, DrawMode.REPLACE, true, 1);
 
-			System.out.println(
-					"-> DRAW_RECT filled black (60,40,80,60), XOR, deferred - overlap with the first rect "
-							+ "should turn white");
+			System.out.println("-> DRAW_RECT filled black (60,40,80,60), XOR, deferred - overlap with the first rect "
+					+ "should turn white");
 			drawRect(client, 60, 40, 80, 60, DrawMode.XOR, true, 1);
 
 			System.out.println("-> DRAW_CIRCLE outline black, center (300,80) r=50, width=4, deferred");
@@ -121,9 +121,8 @@ public final class DrawPrimitivesManualCheck {
 			Frame response = client.send(commandId, payload);
 			System.out.println("   ACKed (0x" + Integer.toHexString(response.getCommandId()) + ")");
 		} catch (CommandNackException e) {
-			System.err.println(
-					"FAILED: commandId=0x" + Integer.toHexString(commandId) + " NACK status=0x"
-							+ Integer.toHexString(e.getStatus()));
+			System.err.println("FAILED: commandId=0x" + Integer.toHexString(commandId) + " NACK status=0x"
+					+ Integer.toHexString(e.getStatus()));
 			System.exit(1);
 		}
 	}

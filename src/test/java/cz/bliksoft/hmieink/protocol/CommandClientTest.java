@@ -13,8 +13,8 @@ class CommandClientTest {
 	@Test
 	void ackIsReturnedAsResponse() throws Exception {
 		FakeFrameTransport transport = new FakeFrameTransport();
-		transport.setResponder(
-				request -> new Frame(CommandId.ACK, request.getSeq(), new byte[] { (byte) request.getSeq(), 0, 0, Status.OK }));
+		transport.setResponder(request -> new Frame(CommandId.ACK, request.getSeq(),
+				new byte[] { (byte) request.getSeq(), 0, 0, Status.OK }));
 		CommandClient client = new CommandClient(transport);
 
 		Frame response = client.send(CommandId.DRAW_LINE, new byte[] { 1, 2, 3 });
@@ -79,10 +79,14 @@ class CommandClientTest {
 
 	@Test
 	void unsolicitedEventWithCollidingSeqIsNotMistakenForTheResponse() throws Exception {
-		// The pending request's SEQ is 0 (first send() on a fresh client) - this event deliberately
-		// reuses SEQ=0 too, proving correlation checks COMMAND_ID as well as SEQ (doc/PROTOCOL.md
-		// §10: a device-initiated event frame has its own independent SEQ counter and could
-		// legitimately collide with whatever the client's pending request happens to be using).
+		// The pending request's SEQ is 0 (first send() on a fresh client) - this event
+		// deliberately
+		// reuses SEQ=0 too, proving correlation checks COMMAND_ID as well as SEQ
+		// (doc/PROTOCOL.md
+		// §10: a device-initiated event frame has its own independent SEQ counter and
+		// could
+		// legitimately collide with whatever the client's pending request happens to be
+		// using).
 		FakeFrameTransport transport = new FakeFrameTransport();
 		AtomicReference<Frame> receivedEvent = new AtomicReference<>();
 		transport.setResponder(request -> {
@@ -100,10 +104,14 @@ class CommandClientTest {
 
 	@Test
 	void waitForLogMessageRetroactivelyCatchesAnAlreadyArrivedMessage() throws Exception {
-		// Regression test for a real bug found on real hardware: a macro's first entry can echo
-		// back within microseconds of the triggering PLAY_MACRO's own ACK - well before a script's
-		// *separate*, later waitForLogMessage() call gets a chance to register a live listener.
-		// pushUnsolicited() here simulates that: the LOG_MESSAGE arrives (and, pre-fix, would have
+		// Regression test for a real bug found on real hardware: a macro's first entry
+		// can echo
+		// back within microseconds of the triggering PLAY_MACRO's own ACK - well before
+		// a script's
+		// *separate*, later waitForLogMessage() call gets a chance to register a live
+		// listener.
+		// pushUnsolicited() here simulates that: the LOG_MESSAGE arrives (and, pre-fix,
+		// would have
 		// been dropped) before waitForLogMessage() is ever called.
 		FakeFrameTransport transport = new FakeFrameTransport();
 		CommandClient client = new CommandClient(transport);
@@ -119,7 +127,8 @@ class CommandClientTest {
 		FakeFrameTransport transport = new FakeFrameTransport();
 		CommandClient client = new CommandClient(transport);
 
-		transport.pushUnsolicited(new Frame(CommandId.LOG_MESSAGE, 0, "anything".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+		transport.pushUnsolicited(
+				new Frame(CommandId.LOG_MESSAGE, 0, "anything".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
 		client.waitForLogMessage(1000); // must return immediately, not throw
 	}

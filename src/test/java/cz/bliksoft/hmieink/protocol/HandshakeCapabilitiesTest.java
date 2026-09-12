@@ -7,13 +7,14 @@ import org.junit.jupiter.api.Test;
 
 class HandshakeCapabilitiesTest {
 
-	// Mirrors firmware's real buildHandshakeResponsePayload() (main.cpp) field-for-field, including
-	// the values actually verified on real CrowPanel hardware (doc/PROTOCOL.md §21).
+	// Mirrors firmware's real buildHandshakeResponsePayload() (main.cpp)
+	// field-for-field, including
+	// the values actually verified on real CrowPanel hardware (doc/PROTOCOL.md
+	// §21).
 	private static byte[] realDeviceHandshakePayload() {
 		return new TlvCodec.Builder().u8(HandshakeCapabilities.TLV_PROTOCOL_VERSION, 1)
 				.u16LE(HandshakeCapabilities.TLV_DISPLAY_WIDTH_PX, 400)
-				.u16LE(HandshakeCapabilities.TLV_DISPLAY_HEIGHT_PX, 300)
-				.u8(HandshakeCapabilities.TLV_COLOR_DEPTH, 1)
+				.u16LE(HandshakeCapabilities.TLV_DISPLAY_HEIGHT_PX, 300).u8(HandshakeCapabilities.TLV_COLOR_DEPTH, 1)
 				.u16LE(HandshakeCapabilities.TLV_MAX_CHUNK_SIZE, 244)
 				.u32LE(HandshakeCapabilities.TLV_FEATURE_BITMASK, 0)
 				.utf8(HandshakeCapabilities.TLV_DEVICE_MODEL, "CrowPanel-4.2-EPD")
@@ -46,7 +47,8 @@ class HandshakeCapabilitiesTest {
 	void derivesDpiFromPixelPitch() {
 		HandshakeCapabilities caps = HandshakeCapabilities.parse(realDeviceHandshakePayload());
 
-		// 25400 um/inch / 212 um/px ~= 119.8 DPI, matching the spec sheet's ~120 DPI claim.
+		// 25400 um/inch / 212 um/px ~= 119.8 DPI, matching the spec sheet's ~120 DPI
+		// claim.
 		assertEquals(119.81, caps.getDpiX(), 0.01);
 		assertEquals(119.81, caps.getDpiY(), 0.01);
 	}

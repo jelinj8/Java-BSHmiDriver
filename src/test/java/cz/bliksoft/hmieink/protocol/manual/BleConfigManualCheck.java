@@ -7,16 +7,18 @@ import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of SET_BLE_ENABLED / BLE_STATUS_REQUEST / SET_BLE_PIN
- * (doc/PROTOCOL.md §13.2), run over Serial specifically so disabling BLE (which drops any BLE
- * central) never risks disrupting the connection this test itself uses. Only exercises the
- * wire-level surface of SET_BLE_PIN (accept, persist, report via HAS_PIN, validate) - actual
- * pairing enforcement only applies at the *next* boot (see setupBle()'s own comment on why it's
- * not live) and needs a real BLE central attempting to connect post-reboot to observe, which this
- * automated tool deliberately does not attempt (see design note 75). Always clears the PIN back
- * off at the end so a real BLE central (including BleHandshakeManualCheck) isn't left needing to
- * satisfy pairing after this test runs. NOT part of the automated {@code mvn test} suite - run it
- * directly:
+ * Manual, real-hardware verification of SET_BLE_ENABLED / BLE_STATUS_REQUEST /
+ * SET_BLE_PIN (doc/PROTOCOL.md §13.2), run over Serial specifically so
+ * disabling BLE (which drops any BLE central) never risks disrupting the
+ * connection this test itself uses. Only exercises the wire-level surface of
+ * SET_BLE_PIN (accept, persist, report via HAS_PIN, validate) - actual pairing
+ * enforcement only applies at the *next* boot (see setupBle()'s own comment on
+ * why it's not live) and needs a real BLE central attempting to connect
+ * post-reboot to observe, which this automated tool deliberately does not
+ * attempt (see design note 75). Always clears the PIN back off at the end so a
+ * real BLE central (including BleHandshakeManualCheck) isn't left needing to
+ * satisfy pairing after this test runs. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \

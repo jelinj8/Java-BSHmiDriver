@@ -17,20 +17,23 @@ import cz.bliksoft.hmieink.protocol.schema.PayloadCodec;
 import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
 
 /**
- * High-level device-client facade (plan.md Phase 5) tying together a transport, the handshake,
- * and command dispatch - one typed method per sendable command (doc/PROTOCOL.md §5-§18), plus
- * {@link #sendText}/{@link #describe} for the plaintext command notation the CLI uses.
+ * High-level device-client facade (plan.md Phase 5) tying together a transport,
+ * the handshake, and command dispatch - one typed method per sendable command
+ * (doc/PROTOCOL.md §5-§18), plus {@link #sendText}/{@link #describe} for the
+ * plaintext command notation the CLI uses.
  *
  * <p>
- * <b>Deliberately transport-agnostic on its own</b> - this class never references {@link
- * SerialFrameTransport}, {@link BleFrameTransport}, or {@code BleAdapter}. Those are the classes
- * that actually pull in this module's two {@code provided} dependencies (jSerialComm,
- * BSToolbox-BLE) - if {@code HmiDevice} referenced them directly, even just inside a static
- * factory method, any consumer touching this class at all (including one who only ever uses TCP
- * or {@link FileFrameTransport}) would force both jars onto the runtime classpath just to satisfy
- * the JVM's verification of this class. {@link TcpHmiDevice}/{@link SerialHmiDevice}/{@link
- * BleHmiDevice}/{@link FileHmiDevice} isolate that, one per transport, mirroring the isolation the
- * project already relies on for the transports themselves.
+ * <b>Deliberately transport-agnostic on its own</b> - this class never
+ * references {@link SerialFrameTransport}, {@link BleFrameTransport}, or
+ * {@code BleAdapter}. Those are the classes that actually pull in this module's
+ * two {@code provided} dependencies (jSerialComm, BSToolbox-BLE) - if
+ * {@code HmiDevice} referenced them directly, even just inside a static factory
+ * method, any consumer touching this class at all (including one who only ever
+ * uses TCP or {@link FileFrameTransport}) would force both jars onto the
+ * runtime classpath just to satisfy the JVM's verification of this class.
+ * {@link TcpHmiDevice}/{@link SerialHmiDevice}/{@link BleHmiDevice}/{@link FileHmiDevice}
+ * isolate that, one per transport, mirroring the isolation the project already
+ * relies on for the transports themselves.
  */
 public class HmiDevice implements Closeable {
 
@@ -70,9 +73,13 @@ public class HmiDevice implements Closeable {
 		commandClient.removeEventListener(listener);
 	}
 
-	// --- plaintext command notation (doc/PROTOCOL.md-external, see TextCommandFormat) ---
+	// --- plaintext command notation (doc/PROTOCOL.md-external, see
+	// TextCommandFormat) ---
 
-	/** Parses and sends one {@code NAME|field|field|...} line (default separator {@code |}). */
+	/**
+	 * Parses and sends one {@code NAME|field|field|...} line (default separator
+	 * {@code |}).
+	 */
 	public Frame sendText(String line) throws IOException {
 		return sendText(line, '|');
 	}
@@ -82,7 +89,10 @@ public class HmiDevice implements Closeable {
 		return commandClient.send(parsed.commandId, parsed.payload);
 	}
 
-	/** Renders a frame (e.g. a live event, or one entry from a decoded {@code .macro} file) back to text. */
+	/**
+	 * Renders a frame (e.g. a live event, or one entry from a decoded
+	 * {@code .macro} file) back to text.
+	 */
 	public String describe(Frame frame) {
 		return describe(frame.getCommandId(), frame.getPayload(), '|');
 	}
@@ -101,7 +111,10 @@ public class HmiDevice implements Closeable {
 		return handshake(AuthLevel.NONE, "");
 	}
 
-	/** doc/PROTOCOL.md §5.3: {@code pinType} is {@link AuthLevel#USAGE} or {@link AuthLevel#ADMIN}. */
+	/**
+	 * doc/PROTOCOL.md §5.3: {@code pinType} is {@link AuthLevel#USAGE} or
+	 * {@link AuthLevel#ADMIN}.
+	 */
 	public HandshakeCapabilities handshake(int pinType, String pin) throws IOException {
 		Frame response = send(CommandId.HANDSHAKE_REQUEST,
 				fields("PIN_TYPE", (long) pinType, "PIN", pin != null ? pin : ""));
@@ -158,8 +171,8 @@ public class HmiDevice implements Closeable {
 						(long) lineWidth, "FLAGS", (long) flags));
 	}
 
-	public void drawCircle(int centerX, int centerY, int radius, int color, int drawMode, boolean filled,
-			int lineWidth, int flags) throws IOException {
+	public void drawCircle(int centerX, int centerY, int radius, int color, int drawMode, boolean filled, int lineWidth,
+			int flags) throws IOException {
 		send(CommandId.DRAW_CIRCLE,
 				fields("CENTER_X", (long) centerX, "CENTER_Y", (long) centerY, "RADIUS", (long) radius, "COLOR",
 						(long) color, "DRAW_MODE", (long) drawMode, "FILLED", bool(filled), "LINE_WIDTH",
@@ -180,14 +193,15 @@ public class HmiDevice implements Closeable {
 	}
 
 	/**
-	 * DRAW_TEXT with FONT_ID={@link FontId#CUSTOM}, sending {@code rawGlyphIndices} verbatim as
-	 * TEXT rather than going through {@link #drawText}'s UTF-8 string encoding. The custom font's
-	 * TEXT is a raw single-byte codepage, not UTF-8 (doc/PROTOCOL.md §12.6.1): each byte 0x00-0xFF
-	 * is directly a glyph index, and bytes >=0x80 must round-trip unmodified, which the schema's
-	 * UTF-8 STRING field kind cannot guarantee (only 0x00-0x7F survive UTF-8 re-encoding unchanged) -
-	 * so this hand-builds the payload instead of going through {@link CommandSchema}/{@link
-	 * PayloadCodec} for TEXT, mirroring the manual DRAW_TEXT payload pattern used in this project's
-	 * hardware-verification tools.
+	 * DRAW_TEXT with FONT_ID={@link FontId#CUSTOM}, sending {@code rawGlyphIndices}
+	 * verbatim as TEXT rather than going through {@link #drawText}'s UTF-8 string
+	 * encoding. The custom font's TEXT is a raw single-byte codepage, not UTF-8
+	 * (doc/PROTOCOL.md §12.6.1): each byte 0x00-0xFF is directly a glyph index, and
+	 * bytes >=0x80 must round-trip unmodified, which the schema's UTF-8 STRING
+	 * field kind cannot guarantee (only 0x00-0x7F survive UTF-8 re-encoding
+	 * unchanged) - so this hand-builds the payload instead of going through
+	 * {@link CommandSchema}/{@link PayloadCodec} for TEXT, mirroring the manual
+	 * DRAW_TEXT payload pattern used in this project's hardware-verification tools.
 	 */
 	public void drawTextCustom(int x, int y, int width, int color, int background, int drawMode, int align,
 			boolean wrap, int flags, byte[] rawGlyphIndices) throws IOException {
@@ -209,11 +223,11 @@ public class HmiDevice implements Closeable {
 	}
 
 	/**
-	 * Convenience overload encoding {@code text} via {@code charset} (e.g. {@link
-	 * StandardCharsets#ISO_8859_1} to reach codepage bytes 0x80-0xFF through ordinary String
-	 * literals, or any custom {@link Charset} matching a particular glyph folder's own codepage
-	 * layout) before delegating to {@link #drawTextCustom(int, int, int, int, int, int, int,
-	 * boolean, int, byte[])}.
+	 * Convenience overload encoding {@code text} via {@code charset} (e.g.
+	 * {@link StandardCharsets#ISO_8859_1} to reach codepage bytes 0x80-0xFF through
+	 * ordinary String literals, or any custom {@link Charset} matching a particular
+	 * glyph folder's own codepage layout) before delegating to
+	 * {@link #drawTextCustom(int, int, int, int, int, int, int, boolean, int, byte[])}.
 	 */
 	public void drawTextCustom(int x, int y, int width, int color, int background, int drawMode, int align,
 			boolean wrap, int flags, String text, Charset charset) throws IOException {
@@ -261,10 +275,11 @@ public class HmiDevice implements Closeable {
 	}
 
 	/**
-	 * Points {@link FontId#CUSTOM}'s glyph folder (doc/PROTOCOL.md §12.6.2) at {@code path}, which
-	 * must carry a mandatory "R:"/"S:"/"F:" volume prefix - "S:"/"F:" select the folder directly on
-	 * SD/INTERNAL, "R:" resolves a PSRAM pointer file's content (itself "S:"/"F:"-prefixed) as the
-	 * real folder, exactly once, at the moment this command runs. Usage-level, session-only - no
+	 * Points {@link FontId#CUSTOM}'s glyph folder (doc/PROTOCOL.md §12.6.2) at
+	 * {@code path}, which must carry a mandatory "R:"/"S:"/"F:" volume prefix -
+	 * "S:"/"F:" select the folder directly on SD/INTERNAL, "R:" resolves a PSRAM
+	 * pointer file's content (itself "S:"/"F:"-prefixed) as the real folder,
+	 * exactly once, at the moment this command runs. Usage-level, session-only - no
 	 * persist option exists for this command.
 	 */
 	public void setCustomFontFolder(String path) throws IOException {
@@ -320,8 +335,8 @@ public class HmiDevice implements Closeable {
 	}
 
 	public void setBlePin(Integer pin, boolean persist) throws IOException {
-		send(CommandId.SET_BLE_PIN, fields("HAS_PIN", bool(pin != null), "PIN", (long) (pin != null ? pin : 0),
-				"FLAGS", persistFlag(persist)));
+		send(CommandId.SET_BLE_PIN, fields("HAS_PIN", bool(pin != null), "PIN", (long) (pin != null ? pin : 0), "FLAGS",
+				persistFlag(persist)));
 	}
 
 	public Map<String, Object> bleStatus() throws IOException {
@@ -332,7 +347,10 @@ public class HmiDevice implements Closeable {
 		send(CommandId.SET_DEVICE_NAME, fields("NAME", name != null ? name : "", "FLAGS", persistFlag(persist)));
 	}
 
-	/** doc/PROTOCOL.md §5.3 - admin-gated (setting the usage PIN itself requires admin). */
+	/**
+	 * doc/PROTOCOL.md §5.3 - admin-gated (setting the usage PIN itself requires
+	 * admin).
+	 */
 	public void setUsagePin(String pin, boolean persist) throws IOException {
 		send(CommandId.SET_USAGE_PIN,
 				fields("HAS_PIN", bool(pin != null), "PIN", pin != null ? pin : "", "FLAGS", persistFlag(persist)));
@@ -351,10 +369,12 @@ public class HmiDevice implements Closeable {
 	}
 
 	/**
-	 * Timeout-overriding form of {@link #fileList} - listing a large directory (hundreds of entries)
-	 * on real SD hardware can genuinely take longer than {@link CommandClient#DEFAULT_TIMEOUT_MILLIS},
-	 * since every {@code VOLUME=SD} operation walks the FAT directory over SPI (§14); {@link
-	 * cz.bliksoft.hmieink.protocol.sync.FolderSync} uses this for exactly that reason.
+	 * Timeout-overriding form of {@link #fileList} - listing a large directory
+	 * (hundreds of entries) on real SD hardware can genuinely take longer than
+	 * {@link CommandClient#DEFAULT_TIMEOUT_MILLIS}, since every {@code VOLUME=SD}
+	 * operation walks the FAT directory over SPI (§14);
+	 * {@link cz.bliksoft.hmieink.protocol.sync.FolderSync} uses this for exactly
+	 * that reason.
 	 */
 	public Map<String, Object> fileList(int volume, String path, long timeoutMillis) throws IOException {
 		return sendAndDecode(CommandId.FILE_LIST_REQUEST, CommandId.FILE_LIST_RESPONSE,
@@ -362,16 +382,20 @@ public class HmiDevice implements Closeable {
 	}
 
 	/**
-	 * Typed, itemized form of {@link #fileList} - {@link CommandSchema} leaves FILE_LIST_RESPONSE's
-	 * repeated ENTRIES as one opaque blob (no generic repeated-compound-record support), so this
-	 * parses it by hand: NAME_LEN(u8) NAME ENTRY_TYPE(u8) SIZE(u32LE), repeated ENTRY_COUNT times
-	 * (doc/PROTOCOL.md §14.1).
+	 * Typed, itemized form of {@link #fileList} - {@link CommandSchema} leaves
+	 * FILE_LIST_RESPONSE's repeated ENTRIES as one opaque blob (no generic
+	 * repeated-compound-record support), so this parses it by hand: NAME_LEN(u8)
+	 * NAME ENTRY_TYPE(u8) SIZE(u32LE), repeated ENTRY_COUNT times (doc/PROTOCOL.md
+	 * §14.1).
 	 */
 	public List<FileEntry> listFiles(int volume, String path) throws IOException {
 		return parseFileEntries(fileList(volume, path));
 	}
 
-	/** Timeout-overriding form of {@link #listFiles} - see {@link #fileList(int, String, long)}. */
+	/**
+	 * Timeout-overriding form of {@link #listFiles} - see
+	 * {@link #fileList(int, String, long)}.
+	 */
 	public List<FileEntry> listFiles(int volume, String path, long timeoutMillis) throws IOException {
 		return parseFileEntries(fileList(volume, path, timeoutMillis));
 	}
@@ -402,7 +426,10 @@ public class HmiDevice implements Closeable {
 		return (byte[]) decoded.get("DATA");
 	}
 
-	/** Timeout-overriding form of {@link #downloadFile} - see {@link #fileList(int, String, long)}. */
+	/**
+	 * Timeout-overriding form of {@link #downloadFile} - see
+	 * {@link #fileList(int, String, long)}.
+	 */
 	public byte[] downloadFile(int volume, String path, long timeoutMillis) throws IOException {
 		Map<String, Object> decoded = sendAndDecode(CommandId.FILE_DOWNLOAD_REQUEST, CommandId.FILE_DATA,
 				fields("VOLUME", (long) volume, "PATH", path), timeoutMillis);
@@ -413,7 +440,10 @@ public class HmiDevice implements Closeable {
 		send(CommandId.FILE_UPLOAD, fields("VOLUME", (long) volume, "PATH", path, "DATA", data));
 	}
 
-	/** Timeout-overriding form of {@link #uploadFile} - see {@link #fileList(int, String, long)}. */
+	/**
+	 * Timeout-overriding form of {@link #uploadFile} - see
+	 * {@link #fileList(int, String, long)}.
+	 */
 	public void uploadFile(int volume, String path, byte[] data, long timeoutMillis) throws IOException {
 		send(CommandId.FILE_UPLOAD, fields("VOLUME", (long) volume, "PATH", path, "DATA", data), timeoutMillis);
 	}
@@ -422,7 +452,10 @@ public class HmiDevice implements Closeable {
 		send(CommandId.FILE_DELETE, fields("VOLUME", (long) volume, "PATH", path));
 	}
 
-	/** Timeout-overriding form of {@link #deleteFile} - see {@link #fileList(int, String, long)}. */
+	/**
+	 * Timeout-overriding form of {@link #deleteFile} - see
+	 * {@link #fileList(int, String, long)}.
+	 */
 	public void deleteFile(int volume, String path, long timeoutMillis) throws IOException {
 		send(CommandId.FILE_DELETE, fields("VOLUME", (long) volume, "PATH", path), timeoutMillis);
 	}
@@ -433,8 +466,8 @@ public class HmiDevice implements Closeable {
 	}
 
 	public void copyFile(int srcVolume, String srcPath, int dstVolume, String dstPath) throws IOException {
-		send(CommandId.FILE_COPY, fields("SRC_VOLUME", (long) srcVolume, "SRC_PATH", srcPath,
-				"DST_VOLUME", (long) dstVolume, "DST_PATH", dstPath));
+		send(CommandId.FILE_COPY, fields("SRC_VOLUME", (long) srcVolume, "SRC_PATH", srcPath, "DST_VOLUME",
+				(long) dstVolume, "DST_PATH", dstPath));
 	}
 
 	public void renameFile(int volume, String srcPath, String dstPath) throws IOException {
@@ -467,7 +500,10 @@ public class HmiDevice implements Closeable {
 				fields("PIN_ID", (long) pin, "FLAGS", flags, "REPEAT_COUNT", (long) repeatCount, "STEPS", steps));
 	}
 
-	/** Convenience over {@link #gpioPlayPattern}, per doc/PROTOCOL.md §15.5's own suggestion. */
+	/**
+	 * Convenience over {@link #gpioPlayPattern}, per doc/PROTOCOL.md §15.5's own
+	 * suggestion.
+	 */
 	public void beep(int pin, int durationMs) throws IOException {
 		gpioPlayPattern(pin, true, false, 0, durationMs);
 	}
@@ -506,8 +542,8 @@ public class HmiDevice implements Closeable {
 	// --- power (§17) ---
 
 	public void setPowerMode(int mode, int flags, long wakeAfterMs, int wakeButton) throws IOException {
-		send(CommandId.SET_POWER_MODE, fields("MODE", (long) mode, "FLAGS", (long) flags, "WAKE_AFTER_MS",
-				wakeAfterMs, "WAKE_BUTTON", (long) wakeButton));
+		send(CommandId.SET_POWER_MODE, fields("MODE", (long) mode, "FLAGS", (long) flags, "WAKE_AFTER_MS", wakeAfterMs,
+				"WAKE_BUTTON", (long) wakeButton));
 	}
 
 	public Map<String, Object> powerStatus() throws IOException {

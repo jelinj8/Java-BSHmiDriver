@@ -52,7 +52,10 @@ class EpiImageCodecTest {
 		assertEquals(0xFF000000, decoded.getRGB(0, 0));
 	}
 
-	/** A checkerboard where even (x+y) is opaque black and odd is either white or transparent. */
+	/**
+	 * A checkerboard where even (x+y) is opaque black and odd is either white or
+	 * transparent.
+	 */
 	private static BufferedImage checkerboard(int width, int height, boolean oddIsTransparent) {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		for (int y = 0; y < height; y++) {

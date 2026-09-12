@@ -312,14 +312,16 @@ public final class Cli {
 	/**
 	 * Resolve a device selector to a device result from a BLE scan.
 	 *
-	 * <p>Supported selectors:
+	 * <p>
+	 * Supported selectors:
 	 * <ul>
 	 * <li>{@code "*"} - return the first device found</li>
-	 * <li>{@code "1"} - return the only device; throw if zero or multiple found</li>
-	 * <li>{@code "<substring>"} - match against device name or address (case-insensitive);
-	 * throw if zero or multiple matches</li>
-	 * <li>{@code "<name1>,<name2>,..."} - comma-separated list of substrings to match
-	 * (each is tried until a unique match is found)</li>
+	 * <li>{@code "1"} - return the only device; throw if zero or multiple
+	 * found</li>
+	 * <li>{@code "<substring>"} - match against device name or address
+	 * (case-insensitive); throw if zero or multiple matches</li>
+	 * <li>{@code "<name1>,<name2>,..."} - comma-separated list of substrings to
+	 * match (each is tried until a unique match is found)</li>
 	 * </ul>
 	 *
 	 * @param found    the list of devices found during scan

@@ -10,12 +10,13 @@ import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of PARTIAL_IMAGE_TRANSFER (doc/PROTOCOL.md §7) and REFRESH
- * (§12.8) - next-steps.md #6: sends two black boxes to opposite corners of the panel as deferred
- * writes (FLAGS.REFRESH_NOW=0 - no visible change from either individually), then a single
- * REFRESH(MODE=0x00) flips the union of both at once, proving the working buffer's dirty-region
- * tracking correctly spans multiple deferred writes. NOT part of the automated {@code mvn test}
- * suite - run it directly:
+ * Manual, real-hardware verification of PARTIAL_IMAGE_TRANSFER (doc/PROTOCOL.md
+ * §7) and REFRESH (§12.8) - next-steps.md #6: sends two black boxes to opposite
+ * corners of the panel as deferred writes (FLAGS.REFRESH_NOW=0 - no visible
+ * change from either individually), then a single REFRESH(MODE=0x00) flips the
+ * union of both at once, proving the working buffer's dirty-region tracking
+ * correctly spans multiple deferred writes. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -26,7 +27,7 @@ public final class PartialImageTransferManualCheck {
 
 	private static final int PANEL_WIDTH = 400;
 	private static final int PANEL_HEIGHT = 300;
-	private static final int BOX_WIDTH = 80;  // multiple of PARTIAL_REFRESH_GRANULARITY_X (8)
+	private static final int BOX_WIDTH = 80; // multiple of PARTIAL_REFRESH_GRANULARITY_X (8)
 	private static final int BOX_HEIGHT = 60; // PARTIAL_REFRESH_GRANULARITY_Y is 1, no constraint
 
 	private PartialImageTransferManualCheck() {

@@ -16,19 +16,22 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of the storage manager (doc/PROTOCOL.md §14): for each of
- * VOLUME=INTERNAL, VOLUME=SD, and VOLUME=PSRAM, queries STORAGE_INFO, uploads a small test file, confirms it
- * appears in FILE_LIST with the right size, downloads it back and confirms the bytes match exactly,
- * copies it (same-volume) and confirms the source is untouched and the copy is byte-identical,
- * renames the copy and confirms the old name is gone and the new one holds the content, renames the
- * original file onto that already-existing name to confirm FILE_RENAME's overwrite semantics, then
- * deletes and confirms FILE_LIST no longer shows any of the test files. A separate cross-volume
- * check (INTERNAL -&gt; PSRAM) confirms FILE_COPY's cross-volume form. Like
- * {@code ScreenReadbackManualCheck}, this asserts programmatically rather than relying on a human
- * looking at the panel (there's nothing to look at - this exercises file I/O, not drawing).
- * VOLUME=SD is skipped (with a warning, not a failure) if STORAGE_INFO reports no card present,
- * since that's a legitimate hot-plug state, not a bug. NOT part of the automated {@code mvn test}
- * suite - run it directly:
+ * Manual, real-hardware verification of the storage manager (doc/PROTOCOL.md
+ * §14): for each of VOLUME=INTERNAL, VOLUME=SD, and VOLUME=PSRAM, queries
+ * STORAGE_INFO, uploads a small test file, confirms it appears in FILE_LIST
+ * with the right size, downloads it back and confirms the bytes match exactly,
+ * copies it (same-volume) and confirms the source is untouched and the copy is
+ * byte-identical, renames the copy and confirms the old name is gone and the
+ * new one holds the content, renames the original file onto that
+ * already-existing name to confirm FILE_RENAME's overwrite semantics, then
+ * deletes and confirms FILE_LIST no longer shows any of the test files. A
+ * separate cross-volume check (INTERNAL -&gt; PSRAM) confirms FILE_COPY's
+ * cross-volume form. Like {@code ScreenReadbackManualCheck}, this asserts
+ * programmatically rather than relying on a human looking at the panel (there's
+ * nothing to look at - this exercises file I/O, not drawing). VOLUME=SD is
+ * skipped (with a warning, not a failure) if STORAGE_INFO reports no card
+ * present, since that's a legitimate hot-plug state, not a bug. NOT part of the
+ * automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -129,7 +132,8 @@ public final class StorageManualCheck {
 
 		entries = list(client, volume, "/");
 		check(label + ": old copy path gone after rename", findByName(entries, TEST_COPY_PATH.substring(1)) == null);
-		check(label + ": renamed path present after rename", findByName(entries, TEST_RENAME_PATH.substring(1)) != null);
+		check(label + ": renamed path present after rename",
+				findByName(entries, TEST_RENAME_PATH.substring(1)) != null);
 
 		System.out.println("-> FILE_RENAME " + TEST_PATH + " -> " + TEST_RENAME_PATH
 				+ " (destination already exists - expect overwrite)");

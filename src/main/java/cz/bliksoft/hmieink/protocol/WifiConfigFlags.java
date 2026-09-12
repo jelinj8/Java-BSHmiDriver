@@ -1,6 +1,10 @@
 package cz.bliksoft.hmieink.protocol;
 
-/** {@code SET_WIFI_CONFIG.FLAGS} bits (doc/PROTOCOL.md §13.2), beyond the shared {@link ConfigFlags#PERSIST}. Mirrors firmware's {@code Protocol.h} {@code wifiConfigFlags} namespace. */
+/**
+ * {@code SET_WIFI_CONFIG.FLAGS} bits (doc/PROTOCOL.md §13.2), beyond the shared
+ * {@link ConfigFlags#PERSIST}. Mirrors firmware's {@code Protocol.h}
+ * {@code wifiConfigFlags} namespace.
+ */
 public final class WifiConfigFlags {
 
 	private WifiConfigFlags() {

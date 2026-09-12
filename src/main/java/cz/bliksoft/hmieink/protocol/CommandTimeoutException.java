@@ -3,8 +3,9 @@ package cz.bliksoft.hmieink.protocol;
 import java.io.IOException;
 
 /**
- * Thrown by {@link CommandClient#send} when no correlated response arrives within the timeout,
- * even after the one retry doc/PROTOCOL.md §10 specifies ("a retry resends the same SEQ").
+ * Thrown by {@link CommandClient#send} when no correlated response arrives
+ * within the timeout, even after the one retry doc/PROTOCOL.md §10 specifies
+ * ("a retry resends the same SEQ").
  */
 public final class CommandTimeoutException extends IOException {
 

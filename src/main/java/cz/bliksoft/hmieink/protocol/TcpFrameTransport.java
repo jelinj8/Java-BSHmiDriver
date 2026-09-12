@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-/** WiFi/TCP transport (doc/PROTOCOL.md §3.2): the device runs a TCP server, this connects as a client. */
+/**
+ * WiFi/TCP transport (doc/PROTOCOL.md §3.2): the device runs a TCP server, this
+ * connects as a client.
+ */
 public final class TcpFrameTransport extends AbstractStreamFrameTransport {
 
 	private final String host;

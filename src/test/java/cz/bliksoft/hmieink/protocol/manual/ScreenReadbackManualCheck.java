@@ -16,26 +16,31 @@ import cz.bliksoft.hmieink.protocol.RlePackBits;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of READ_SCREEN/SCREEN_DATA (doc/PROTOCOL.md §8) and
- * CLEAR_ARTIFACTS (§9). Unlike the other manual checks, this one verifies most of its own
- * assertions programmatically (decoded pixel content is compared byte-for-byte against what's
- * expected) rather than relying on a human looking at the panel - the whole point of these two
- * commands is to read data back, which this test can check directly. Sequence:
+ * Manual, real-hardware verification of READ_SCREEN/SCREEN_DATA
+ * (doc/PROTOCOL.md §8) and CLEAR_ARTIFACTS (§9). Unlike the other manual
+ * checks, this one verifies most of its own assertions programmatically
+ * (decoded pixel content is compared byte-for-byte against what's expected)
+ * rather than relying on a human looking at the panel - the whole point of
+ * these two commands is to read data back, which this test can check directly.
+ * Sequence:
  *
  * <ol>
- * <li>Draw a filled black rect ("A") immediately (FLAGS.REFRESH_NOW=1) - panel and working buffer
- * now agree.
- * <li>READ_SCREEN both SOURCE=PANEL and SOURCE=WORKING_BUFFER, MODE=FULL - confirm both show A and
- * agree with each other.
- * <li>Draw a second filled black rect ("B") deferred (FLAGS=0, not flushed) - working buffer and
- * panel now genuinely differ.
- * <li>READ_SCREEN SOURCE=WORKING_BUFFER - confirm it shows BOTH A and B. READ_SCREEN SOURCE=PANEL -
- * confirm it shows ONLY A (B not yet flushed) - the key distinguishing check.
- * <li>REFRESH(MODE=0x00) to flush B, then confirm SOURCE=PANEL now shows both A and B too.
- * <li>CLEAR_ARTIFACTS(CYCLES=1, FLAGS=0) - confirm SOURCE=PANEL reads back all-white, while
- * SOURCE=WORKING_BUFFER is untouched (still shows both A and B).
- * <li>CLEAR_ARTIFACTS(CYCLES=1, FLAGS=RESTORE_CONTENT) - confirm SOURCE=PANEL shows both A and B
- * again.
+ * <li>Draw a filled black rect ("A") immediately (FLAGS.REFRESH_NOW=1) - panel
+ * and working buffer now agree.
+ * <li>READ_SCREEN both SOURCE=PANEL and SOURCE=WORKING_BUFFER, MODE=FULL -
+ * confirm both show A and agree with each other.
+ * <li>Draw a second filled black rect ("B") deferred (FLAGS=0, not flushed) -
+ * working buffer and panel now genuinely differ.
+ * <li>READ_SCREEN SOURCE=WORKING_BUFFER - confirm it shows BOTH A and B.
+ * READ_SCREEN SOURCE=PANEL - confirm it shows ONLY A (B not yet flushed) - the
+ * key distinguishing check.
+ * <li>REFRESH(MODE=0x00) to flush B, then confirm SOURCE=PANEL now shows both A
+ * and B too.
+ * <li>CLEAR_ARTIFACTS(CYCLES=1, FLAGS=0) - confirm SOURCE=PANEL reads back
+ * all-white, while SOURCE=WORKING_BUFFER is untouched (still shows both A and
+ * B).
+ * <li>CLEAR_ARTIFACTS(CYCLES=1, FLAGS=RESTORE_CONTENT) - confirm SOURCE=PANEL
+ * shows both A and B again.
  * </ol>
  *
  * NOT part of the automated {@code mvn test} suite - run it directly:
@@ -47,7 +52,8 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
  */
 public final class ScreenReadbackManualCheck {
 
-	// Rect A: immediate. Rect B: deferred. Chosen apart so a single interior sample point per rect
+	// Rect A: immediate. Rect B: deferred. Chosen apart so a single interior sample
+	// point per rect
 	// unambiguously tells them apart.
 	private static final int RECT_A_X = 50, RECT_A_Y = 50, RECT_A_W = 60, RECT_A_H = 60;
 	private static final int RECT_B_X = 250, RECT_B_Y = 50, RECT_B_W = 60, RECT_B_H = 60;
@@ -83,8 +89,8 @@ public final class ScreenReadbackManualCheck {
 			drawRect(client, RECT_B_X, RECT_B_Y, RECT_B_W, RECT_B_H, 0x00);
 
 			System.out.println("-> READ_SCREEN SOURCE=WORKING_BUFFER - expect A and B both present");
-			check("working buffer shows both A and B before REFRESH", readScreen(client, ReadScreenSource.WORKING_BUFFER),
-					true, true);
+			check("working buffer shows both A and B before REFRESH",
+					readScreen(client, ReadScreenSource.WORKING_BUFFER), true, true);
 			System.out.println("-> READ_SCREEN SOURCE=PANEL - expect A present, B still absent (not flushed yet)");
 			check("panel still shows only A before REFRESH", readScreen(client, ReadScreenSource.PANEL), true, false);
 
@@ -119,7 +125,10 @@ public final class ScreenReadbackManualCheck {
 		}
 	}
 
-	/** Decodes SCREEN_DATA and returns whether the sample point inside each rect reads BLACK. */
+	/**
+	 * Decodes SCREEN_DATA and returns whether the sample point inside each rect
+	 * reads BLACK.
+	 */
 	private static boolean[] readScreen(CommandClient client, int source) throws Exception {
 		ByteBuffer payload = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) source);
@@ -152,8 +161,8 @@ public final class ScreenReadbackManualCheck {
 
 	private static void check(String label, boolean[] actual, boolean expectA, boolean expectB) {
 		boolean ok = actual[0] == expectA && actual[1] == expectB;
-		System.out.println("   [" + (ok ? "PASS" : "FAIL") + "] " + label + " (expected A=" + expectA + " B="
-				+ expectB + ", got A=" + actual[0] + " B=" + actual[1] + ")");
+		System.out.println("   [" + (ok ? "PASS" : "FAIL") + "] " + label + " (expected A=" + expectA + " B=" + expectB
+				+ ", got A=" + actual[0] + " B=" + actual[1] + ")");
 		if (!ok) {
 			failures++;
 		}
@@ -198,7 +207,8 @@ public final class ScreenReadbackManualCheck {
 		payload.put((byte) cycles);
 		payload.put((byte) flags);
 		try {
-			// CLEAR_ARTIFACTS can take several seconds (doc/PROTOCOL.md §9) - longer ACK timeout.
+			// CLEAR_ARTIFACTS can take several seconds (doc/PROTOCOL.md §9) - longer ACK
+			// timeout.
 			Frame response = client.send(CommandId.CLEAR_ARTIFACTS, payload.array(), 20_000);
 			System.out.println("   ACKed (0x" + Integer.toHexString(response.getCommandId()) + ")");
 		} catch (CommandNackException e) {

@@ -7,9 +7,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Encodes/decodes back-to-back §5.1 TLV entries, as used by the handshake payload (§5.2, see
- * {@link HandshakeCapabilities}) and CONFIG_BACKUP/RESTORE (§13). Mirrors the inline TLV helpers
- * in firmware's main.cpp.
+ * Encodes/decodes back-to-back §5.1 TLV entries, as used by the handshake
+ * payload (§5.2, see {@link HandshakeCapabilities}) and CONFIG_BACKUP/RESTORE
+ * (§13). Mirrors the inline TLV helpers in firmware's main.cpp.
  */
 public final class TlvCodec {
 
@@ -17,9 +17,10 @@ public final class TlvCodec {
 	}
 
 	/**
-	 * Decodes a flat back-to-back TLV byte stream. A truncated trailing entry (declared LENGTH
-	 * would run past the end of {@code payload}) is silently dropped rather than throwing - mirrors
-	 * §5.1's "unknown TYPE -> skip" tolerance philosophy for malformed/short data too.
+	 * Decodes a flat back-to-back TLV byte stream. A truncated trailing entry
+	 * (declared LENGTH would run past the end of {@code payload}) is silently
+	 * dropped rather than throwing - mirrors §5.1's "unknown TYPE -> skip"
+	 * tolerance philosophy for malformed/short data too.
 	 */
 	public static List<Tlv> decode(byte[] payload) {
 		List<Tlv> entries = new ArrayList<>();
@@ -37,7 +38,9 @@ public final class TlvCodec {
 		return entries;
 	}
 
-	/** Builds a flat back-to-back TLV byte stream, e.g. for CONFIG_RESTORE (§13). */
+	/**
+	 * Builds a flat back-to-back TLV byte stream, e.g. for CONFIG_RESTORE (§13).
+	 */
 	public static final class Builder {
 
 		private final ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -1,8 +1,9 @@
 package cz.bliksoft.hmieink.protocol;
 
 /**
- * One entry of a FILE_LIST_RESPONSE listing (doc/PROTOCOL.md §14.1) - basename only, no path
- * separators, exactly as the wire format defines NAME. See {@link HmiDevice#listFiles}.
+ * One entry of a FILE_LIST_RESPONSE listing (doc/PROTOCOL.md §14.1) - basename
+ * only, no path separators, exactly as the wire format defines NAME. See
+ * {@link HmiDevice#listFiles}.
  */
 public final class FileEntry {
 
@@ -24,7 +25,10 @@ public final class FileEntry {
 		return directory;
 	}
 
-	/** Byte size for a file; 0 for a directory (doc/PROTOCOL.md §14.1 - SIZE is 0 for ENTRY_TYPE=DIR). */
+	/**
+	 * Byte size for a file; 0 for a directory (doc/PROTOCOL.md §14.1 - SIZE is 0
+	 * for ENTRY_TYPE=DIR).
+	 */
 	public long getSize() {
 		return size;
 	}

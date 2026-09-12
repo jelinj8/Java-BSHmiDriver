@@ -32,9 +32,10 @@ class HmiDeviceTest {
 	}
 
 	/**
-	 * Mirrors the CLI's own -f/-c/-p handling: a sequence of sendText() calls, in order, must
-	 * appear in that exact order in the resulting .macro file - the guarantee Cli's hand-rolled
-	 * args[] walk relies on instead of picocli's own (order-losing) repeated-option collection.
+	 * Mirrors the CLI's own -f/-c/-p handling: a sequence of sendText() calls, in
+	 * order, must appear in that exact order in the resulting .macro file - the
+	 * guarantee Cli's hand-rolled args[] walk relies on instead of picocli's own
+	 * (order-losing) repeated-option collection.
 	 */
 	@Test
 	void sequentialSendsPreserveOrder() throws IOException {

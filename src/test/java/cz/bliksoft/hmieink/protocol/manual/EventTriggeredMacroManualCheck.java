@@ -16,22 +16,26 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of event-triggered macro auto-play (doc/PROTOCOL.md §18.5):
- * on any {@code BUTTON_EVENT}/{@code GPIO_EVENT}, firmware auto-plays a same-named macro from
- * {@code VOLUME=PSRAM} if one exists. Uses {@link SerialFrameTransport#pressBoot()}/
- * {@code releaseBoot()} (already proven in {@code BoardControlManualCheck}) to simulate real
- * {@code BUTTON_EVENT}s for {@code BUTTON_ID.BOOT} (id {@code 0x04}) via the CH340's DTR line, with
- * no physical touch needed - GPIO-triggered playback needs a real level change on a wired input pin
- * and is out of scope here (physical/manual verification only).
+ * Manual, real-hardware verification of event-triggered macro auto-play
+ * (doc/PROTOCOL.md §18.5): on any {@code BUTTON_EVENT}/{@code GPIO_EVENT},
+ * firmware auto-plays a same-named macro from {@code VOLUME=PSRAM} if one
+ * exists. Uses {@link SerialFrameTransport#pressBoot()}/ {@code releaseBoot()}
+ * (already proven in {@code BoardControlManualCheck}) to simulate real
+ * {@code BUTTON_EVENT}s for {@code BUTTON_ID.BOOT} (id {@code 0x04}) via the
+ * CH340's DTR line, with no physical touch needed - GPIO-triggered playback
+ * needs a real level change on a wired input pin and is out of scope here
+ * (physical/manual verification only).
  *
  * <p>
- * Asserts programmatically throughout (via {@code LOG_MESSAGE} echoes and downloading
- * {@code /trigger_id.txt}), like {@code StorageManualCheck}, rather than relying on a human looking
- * at the panel. Covers: {@code SHORT_PRESS} firing a dedicated macro after a quick tap; a trigger
- * arriving while a macro is already playing being queued (appended to the tail of the current
- * playback) rather than dropped; and the {@code /on_any_event.macro} fallback + {@code
- * /trigger_id.txt} "last trigger" variable. NOT part of the automated {@code mvn test} suite - run
- * it directly:
+ * Asserts programmatically throughout (via {@code LOG_MESSAGE} echoes and
+ * downloading {@code /trigger_id.txt}), like {@code StorageManualCheck}, rather
+ * than relying on a human looking at the panel. Covers: {@code SHORT_PRESS}
+ * firing a dedicated macro after a quick tap; a trigger arriving while a macro
+ * is already playing being queued (appended to the tail of the current
+ * playback) rather than dropped; and the {@code /on_any_event.macro} fallback +
+ * {@code
+ * /trigger_id.txt} "last trigger" variable. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -66,8 +70,8 @@ public final class EventTriggeredMacroManualCheck {
 		client.connect();
 		try {
 			System.out.println("-> cleanup: deleting any pre-existing test files on VOLUME=PSRAM");
-			for (String path : Arrays.asList(SHORT_PRESS_PATH, PRESS_PATH, RELEASE_PATH, LONGPRESS_PATH,
-					ANY_EVENT_PATH, TRIGGER_ID_PATH)) {
+			for (String path : Arrays.asList(SHORT_PRESS_PATH, PRESS_PATH, RELEASE_PATH, LONGPRESS_PATH, ANY_EVENT_PATH,
+					TRIGGER_ID_PATH)) {
 				deleteIfExists(client, path);
 			}
 
@@ -83,16 +87,18 @@ public final class EventTriggeredMacroManualCheck {
 				System.exit(1);
 			}
 		} finally {
-			for (String path : Arrays.asList(SHORT_PRESS_PATH, PRESS_PATH, RELEASE_PATH, LONGPRESS_PATH,
-					ANY_EVENT_PATH, TRIGGER_ID_PATH)) {
+			for (String path : Arrays.asList(SHORT_PRESS_PATH, PRESS_PATH, RELEASE_PATH, LONGPRESS_PATH, ANY_EVENT_PATH,
+					TRIGGER_ID_PATH)) {
 				deleteIfExists(client, path);
 			}
 			client.close();
 		}
 	}
 
-	// SHORT_PRESS (doc/PROTOCOL.md §11) fires right after RELEASE whenever a press-release cycle
-	// never crosses the LONG_PRESS threshold - a quick tap should trigger its own dedicated macro.
+	// SHORT_PRESS (doc/PROTOCOL.md §11) fires right after RELEASE whenever a
+	// press-release cycle
+	// never crosses the LONG_PRESS threshold - a quick tap should trigger its own
+	// dedicated macro.
 	private static void testShortPress(CommandClient client, SerialFrameTransport transport) throws Exception {
 		System.out.println("== SHORT_PRESS triggers /on_button_4_shortpress.macro ==");
 		upload(client, SHORT_PRESS_PATH, macroOf(logMessageEntry("evt_shortpress")));
@@ -107,9 +113,12 @@ public final class EventTriggeredMacroManualCheck {
 		Thread.sleep(200);
 	}
 
-	// A second trigger arriving while gMacroPlayer is already playing must queue (append to the
-	// tail of the current playback) rather than being dropped - the design decision this whole
-	// feature's busy behavior was revised to, mid-design, per the user's own proposal.
+	// A second trigger arriving while gMacroPlayer is already playing must queue
+	// (append to the
+	// tail of the current playback) rather than being dropped - the design decision
+	// this whole
+	// feature's busy behavior was revised to, mid-design, per the user's own
+	// proposal.
 	private static void testQueueingWhileBusy(CommandClient client, SerialFrameTransport transport) throws Exception {
 		System.out.println("== a second trigger while busy queues instead of dropping ==");
 		upload(client, PRESS_PATH, macroOf(pauseEntry(1500), logMessageEntry("evt1")));
@@ -134,10 +143,14 @@ public final class EventTriggeredMacroManualCheck {
 		Thread.sleep(200);
 	}
 
-	// /on_any_event.macro plays as a fallback whenever the specific per-event macro is absent, and
-	// /trigger_id.txt is overwritten with the specific path that would have applied either way -
-	// checked here by downloading it directly (programmatic, not a LOG_MESSAGE echo).
-	private static void testFallbackAndTriggerId(CommandClient client, SerialFrameTransport transport) throws Exception {
+	// /on_any_event.macro plays as a fallback whenever the specific per-event macro
+	// is absent, and
+	// /trigger_id.txt is overwritten with the specific path that would have applied
+	// either way -
+	// checked here by downloading it directly (programmatic, not a LOG_MESSAGE
+	// echo).
+	private static void testFallbackAndTriggerId(CommandClient client, SerialFrameTransport transport)
+			throws Exception {
 		System.out.println("== on_any_event.macro fallback + trigger_id.txt ==");
 		upload(client, ANY_EVENT_PATH, macroOf(logMessageEntry("evt_fallback")));
 
@@ -193,7 +206,8 @@ public final class EventTriggeredMacroManualCheck {
 
 	private static void upload(CommandClient client, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.PSRAM);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

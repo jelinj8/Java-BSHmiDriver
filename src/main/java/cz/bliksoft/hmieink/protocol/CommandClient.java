@@ -20,32 +20,37 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 /**
- * Thin stop-and-wait command/response client (doc/PROTOCOL.md §10) wrapping a {@link
- * FrameTransport}: assigns SEQ, sends, blocks for the matching ACK/NACK/direct-response frame, and
- * retries once - same SEQ, per §10 ("a retry resends the same SEQ, enabling dedup at the
- * receiver") - on timeout. {@link #send} is synchronized, matching the protocol's single-message-
- * in-flight-per-direction model: concurrent callers queue rather than interleaving requests.
+ * Thin stop-and-wait command/response client (doc/PROTOCOL.md §10) wrapping a
+ * {@link FrameTransport}: assigns SEQ, sends, blocks for the matching
+ * ACK/NACK/direct-response frame, and retries once - same SEQ, per §10 ("a
+ * retry resends the same SEQ, enabling dedup at the receiver") - on timeout.
+ * {@link #send} is synchronized, matching the protocol's single-message-
+ * in-flight-per-direction model: concurrent callers queue rather than
+ * interleaving requests.
  *
  * <p>
- * Installs itself as the transport's sole {@link FrameListener}. A response frame is matched to
- * the pending request as follows (mirroring §10 exactly, not just "same SEQ" - a device-initiated
- * event frame, e.g. BUTTON_EVENT, carries its own independent SEQ counter and could coincidentally
- * collide with a pending request's SEQ):
+ * Installs itself as the transport's sole {@link FrameListener}. A response
+ * frame is matched to the pending request as follows (mirroring §10 exactly,
+ * not just "same SEQ" - a device-initiated event frame, e.g. BUTTON_EVENT,
+ * carries its own independent SEQ counter and could coincidentally collide with
+ * a pending request's SEQ):
  * <ul>
  * <li>ACK/NACK: correlates via the payload's own REF_SEQ field.
- * <li>A command with an "inherent data response" (§10's list, e.g. HANDSHAKE_REQUEST -&gt;
- * HANDSHAKE_RESPONSE): correlates via the expected response COMMAND_ID <em>and</em> a matching
- * frame SEQ.
+ * <li>A command with an "inherent data response" (§10's list, e.g.
+ * HANDSHAKE_REQUEST -&gt; HANDSHAKE_RESPONSE): correlates via the expected
+ * response COMMAND_ID <em>and</em> a matching frame SEQ.
  * </ul>
- * Anything that doesn't correlate - because nothing is pending, or because it's a genuine
- * unsolicited push - is forwarded to every registered {@link CommandEventListener} (see
- * {@link #addEventListener}) instead of being dropped.
+ * Anything that doesn't correlate - because nothing is pending, or because it's
+ * a genuine unsolicited push - is forwarded to every registered
+ * {@link CommandEventListener} (see {@link #addEventListener}) instead of being
+ * dropped.
  */
 public final class CommandClient implements Closeable {
 
 	public static final long DEFAULT_TIMEOUT_MILLIS = 5000;
 
-	// doc/PROTOCOL.md §10's enumerated "commands with an inherent data response" - everything else
+	// doc/PROTOCOL.md §10's enumerated "commands with an inherent data response" -
+	// everything else
 	// gets a bare ACK/NACK instead.
 	private static final Map<Integer, Integer> DIRECT_RESPONSE_COMMAND_IDS = buildDirectResponseMap();
 
@@ -54,20 +59,27 @@ public final class CommandClient implements Closeable {
 	private final AtomicInteger seqCounter = new AtomicInteger(0);
 	private final Object sendLock = new Object();
 
-	// A list, not a single field, so a temporary listener (waitForLogMessage() below) can be added
-	// without disturbing whatever the caller already registered for its own purposes (BUTTON_EVENT,
-	// GPIO_EVENT, ...) - previously a second setEventListener() call would have silently clobbered
+	// A list, not a single field, so a temporary listener (waitForLogMessage()
+	// below) can be added
+	// without disturbing whatever the caller already registered for its own
+	// purposes (BUTTON_EVENT,
+	// GPIO_EVENT, ...) - previously a second setEventListener() call would have
+	// silently clobbered
 	// the first.
 	private final CopyOnWriteArrayList<CommandEventListener> eventListeners = new CopyOnWriteArrayList<>();
 	private volatile int pendingSeq = -1;
 	private volatile int pendingResponseCommandId = -1;
 	private volatile CompletableFuture<Frame> pendingResponse;
 
-	// doc/PROTOCOL.md §10.1: guards both recentLogMessages and logWaiters as one atomic unit, so a
+	// doc/PROTOCOL.md §10.1: guards both recentLogMessages and logWaiters as one
+	// atomic unit, so a
 	// LOG_MESSAGE arriving on the reader thread can never land in the gap between a
-	// waitForLogMessage() caller checking history and registering to wait live - see that method's
-	// own doc for why this matters (a real race, found live: a macro's first entry can echo within
-	// microseconds of PLAY_MACRO's own ACK, well before a *later*, separate script line's
+	// waitForLogMessage() caller checking history and registering to wait live -
+	// see that method's
+	// own doc for why this matters (a real race, found live: a macro's first entry
+	// can echo within
+	// microseconds of PLAY_MACRO's own ACK, well before a *later*, separate script
+	// line's
 	// waitForLogMessage() call gets a chance to start listening).
 	private final Object logMessageLock = new Object();
 	private static final int LOG_MESSAGE_HISTORY_CAPACITY = 32;
@@ -111,7 +123,10 @@ public final class CommandClient implements Closeable {
 		transport.connect();
 	}
 
-	/** Frames that don't correlate to a pending request (BUTTON_EVENT, GPIO_EVENT, ...) are delivered here. */
+	/**
+	 * Frames that don't correlate to a pending request (BUTTON_EVENT, GPIO_EVENT,
+	 * ...) are delivered here.
+	 */
 	public void addEventListener(CommandEventListener listener) {
 		eventListeners.add(listener);
 	}
@@ -130,12 +145,11 @@ public final class CommandClient implements Closeable {
 	}
 
 	/**
-	 * @return the ACK frame (empty payload), or the direct response frame (e.g. HANDSHAKE_RESPONSE)
-	 *         for a command §10 defines one for
-	 * @throws CommandNackException
-	 *             if the device replied NACK
-	 * @throws CommandTimeoutException
-	 *             if no correlated response arrived within the timeout, even after one retry
+	 * @return the ACK frame (empty payload), or the direct response frame (e.g.
+	 *         HANDSHAKE_RESPONSE) for a command §10 defines one for
+	 * @throws CommandNackException    if the device replied NACK
+	 * @throws CommandTimeoutException if no correlated response arrived within the
+	 *                                 timeout, even after one retry
 	 */
 	public Frame send(int commandId, byte[] payload, long timeoutMillis) throws IOException {
 		synchronized (sendLock) {
@@ -157,7 +171,10 @@ public final class CommandClient implements Closeable {
 		}
 	}
 
-	/** @return the correlated response, or {@code null} on timeout (never throws for a plain timeout). */
+	/**
+	 * @return the correlated response, or {@code null} on timeout (never throws for
+	 *         a plain timeout).
+	 */
 	private Frame attempt(Frame request, int expectedResponseCommandId, long timeoutMillis) throws IOException {
 		CompletableFuture<Frame> future = new CompletableFuture<>();
 		pendingResponse = future;
@@ -199,9 +216,10 @@ public final class CommandClient implements Closeable {
 	}
 
 	/**
-	 * Satisfies the first currently-waiting {@link LogWaiter} whose predicate matches (if any),
-	 * else buffers the frame into {@link #recentLogMessages} (bounded, oldest evicted first) so a
-	 * *later* {@link #waitForLogMessage} call can still retroactively catch it.
+	 * Satisfies the first currently-waiting {@link LogWaiter} whose predicate
+	 * matches (if any), else buffers the frame into {@link #recentLogMessages}
+	 * (bounded, oldest evicted first) so a *later* {@link #waitForLogMessage} call
+	 * can still retroactively catch it.
 	 */
 	private void recordOrDeliverLogMessage(Frame frame) {
 		synchronized (logMessageLock) {
@@ -221,41 +239,46 @@ public final class CommandClient implements Closeable {
 	}
 
 	/**
-	 * Blocks until a {@code LOG_MESSAGE} (doc/PROTOCOL.md §0x0005) whose payload exactly matches
-	 * {@code marker} is received, or throws on timeout - requested directly: "the PC than could
-	 * wait for receiving that frame (e.g. for timing or for waiting for macro completion before
-	 * sending more commands)". A {@code LOG_MESSAGE} sent live is echoed back immediately (usable
-	 * as a round-trip-time probe); one embedded in a recorded macro (via {@code RECORD_MACRO}/
-	 * {@code SAVE_MACRO}) is echoed back whenever that point in the macro replays, giving a
-	 * reliable "macro reached/finished this point" signal that {@code PLAY_MACRO}'s own ACK
-	 * ("playback started", not "finished", §18.3) can't provide on its own.
+	 * Blocks until a {@code LOG_MESSAGE} (doc/PROTOCOL.md §0x0005) whose payload
+	 * exactly matches {@code marker} is received, or throws on timeout - requested
+	 * directly: "the PC than could wait for receiving that frame (e.g. for timing
+	 * or for waiting for macro completion before sending more commands)". A
+	 * {@code LOG_MESSAGE} sent live is echoed back immediately (usable as a
+	 * round-trip-time probe); one embedded in a recorded macro (via
+	 * {@code RECORD_MACRO}/ {@code SAVE_MACRO}) is echoed back whenever that point
+	 * in the macro replays, giving a reliable "macro reached/finished this point"
+	 * signal that {@code PLAY_MACRO}'s own ACK ("playback started", not "finished",
+	 * §18.3) can't provide on its own.
 	 *
 	 * <p>
-	 * First checks a small bounded history of already-received {@code LOG_MESSAGE}s (consuming the
-	 * match if found there) before blocking on a fresh one - not just an optimization: a macro's
-	 * first entry can echo back within microseconds of the triggering {@code PLAY_MACRO}'s own ACK,
-	 * which can easily be *before* a later, separate call to this method gets a chance to start
-	 * listening (confirmed live: a CLI script issuing {@code PLAY_MACRO} then a {@code WAIT_LOG}
-	 * line one line later missed the echo entirely without this). Uses its own dedicated
-	 * lock/buffer, not {@link #addEventListener} - does not disturb any listener the caller already
-	 * registered, and every matching frame satisfies at most one waiter (consumed, not re-matched).
+	 * First checks a small bounded history of already-received {@code LOG_MESSAGE}s
+	 * (consuming the match if found there) before blocking on a fresh one - not
+	 * just an optimization: a macro's first entry can echo back within microseconds
+	 * of the triggering {@code PLAY_MACRO}'s own ACK, which can easily be *before*
+	 * a later, separate call to this method gets a chance to start listening
+	 * (confirmed live: a CLI script issuing {@code PLAY_MACRO} then a
+	 * {@code WAIT_LOG} line one line later missed the echo entirely without this).
+	 * Uses its own dedicated lock/buffer, not {@link #addEventListener} - does not
+	 * disturb any listener the caller already registered, and every matching frame
+	 * satisfies at most one waiter (consumed, not re-matched).
 	 *
-	 * @throws IOException
-	 *             if the timeout elapses first, or the transport closes/errors while waiting
+	 * @throws IOException if the timeout elapses first, or the transport
+	 *                     closes/errors while waiting
 	 */
 	public void waitForLogMessage(byte[] marker, long timeoutMillis) throws IOException {
-		waitForLogMessage(frame -> Arrays.equals(frame.getPayload(), marker),
-				"a LOG_MESSAGE matching the given marker", timeoutMillis);
+		waitForLogMessage(frame -> Arrays.equals(frame.getPayload(), marker), "a LOG_MESSAGE matching the given marker",
+				timeoutMillis);
 	}
 
 	/**
-	 * Like {@link #waitForLogMessage(byte[], long)} but matches <em>any</em> {@code LOG_MESSAGE} -
-	 * requested directly for PC-local script control ("wait for log message frame... with a
-	 * timeout... any"), e.g. a script line that just wants to know a macro has echoed anything back
-	 * yet, without caring which marker.
+	 * Like {@link #waitForLogMessage(byte[], long)} but matches <em>any</em>
+	 * {@code LOG_MESSAGE} - requested directly for PC-local script control ("wait
+	 * for log message frame... with a timeout... any"), e.g. a script line that
+	 * just wants to know a macro has echoed anything back yet, without caring which
+	 * marker.
 	 *
-	 * @throws IOException
-	 *             if the timeout elapses first, or the transport closes/errors while waiting
+	 * @throws IOException if the timeout elapses first, or the transport
+	 *                     closes/errors while waiting
 	 */
 	public void waitForLogMessage(long timeoutMillis) throws IOException {
 		waitForLogMessage(frame -> true, "any LOG_MESSAGE", timeoutMillis);

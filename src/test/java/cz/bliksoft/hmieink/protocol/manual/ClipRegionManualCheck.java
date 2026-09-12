@@ -16,16 +16,18 @@ import cz.bliksoft.hmieink.protocol.TextAlign;
 import cz.bliksoft.hmieink.protocol.TextBackground;
 
 /**
- * Manual, real-hardware verification of SET_CLIP_REGION (doc/PROTOCOL.md §12.10) and its
- * interaction with SHIFT_REGION/DRAW_TEXT - the "scrolling log panel" scenario: draws a border
- * 2px *outside* where the clip box will be (before the clip is active, so the border itself isn't
- * clipped - and outside the exact box, so SHIFT_REGION's own fill can never overwrite the border's
- * pixels, which would otherwise happen since the border would sit exactly on the shifted
- * rectangle's own boundary), then sets the clip to the box, draws a line of text deliberately much
- * longer than the box - which should be truncated at the box edges, not spill outside it - shifts
- * the box's content up (scrolling), draws a second line of text the same way, then resets the clip
- * to the full panel and confirms drawing outside the old box works again. NOT part of the
- * automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of SET_CLIP_REGION (doc/PROTOCOL.md
+ * §12.10) and its interaction with SHIFT_REGION/DRAW_TEXT - the "scrolling log
+ * panel" scenario: draws a border 2px *outside* where the clip box will be
+ * (before the clip is active, so the border itself isn't clipped - and outside
+ * the exact box, so SHIFT_REGION's own fill can never overwrite the border's
+ * pixels, which would otherwise happen since the border would sit exactly on
+ * the shifted rectangle's own boundary), then sets the clip to the box, draws a
+ * line of text deliberately much longer than the box - which should be
+ * truncated at the box edges, not spill outside it - shifts the box's content
+ * up (scrolling), draws a second line of text the same way, then resets the
+ * clip to the full panel and confirms drawing outside the old box works again.
+ * NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -64,8 +66,7 @@ public final class ClipRegionManualCheck {
 			System.out.println("-> SET_CLIP_REGION to the box - everything below should stay inside it");
 			setClipRegion(client, BOX_X, BOX_Y, BOX_WIDTH, BOX_HEIGHT);
 
-			System.out.println(
-					"-> DRAW_TEXT starting at the box's left edge, deliberately much longer than the box");
+			System.out.println("-> DRAW_TEXT starting at the box's left edge, deliberately much longer than the box");
 			drawText(client, BOX_X, BOX_Y + 10, "This line is much longer than the little box");
 
 			System.out.println("-> SHIFT_REGION: the box's content, UP, step=12, white fill (scroll)");

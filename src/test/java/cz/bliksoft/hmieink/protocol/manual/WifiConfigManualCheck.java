@@ -10,14 +10,16 @@ import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of SET_WIFI_CONFIG / WIFI_STATUS_REQUEST / SET_WIFI_ENABLED
- * (doc/PROTOCOL.md §13.2). Deliberately never sends {@code FLAGS.PERSIST} with a test SSID - unlike
- * {@code SET_DEVICE_NAME}, the wire protocol has no "clear back to default" convention for WiFi
- * credentials (SSID_LEN=0 is a validation error, not a clear request), so a persisted test SSID
- * would leave the board unable to rejoin the real network on its own with no way to undo it short
- * of a fresh flash. Instead exercises the safe, real, non-destructive path: toggling
- * SET_WIFI_ENABLED off and back on and confirming the board reassociates with whatever's already
- * configured (falling back to {@code secrets.h} the first time this command family is ever used).
+ * Manual, real-hardware verification of SET_WIFI_CONFIG / WIFI_STATUS_REQUEST /
+ * SET_WIFI_ENABLED (doc/PROTOCOL.md §13.2). Deliberately never sends
+ * {@code FLAGS.PERSIST} with a test SSID - unlike {@code SET_DEVICE_NAME}, the
+ * wire protocol has no "clear back to default" convention for WiFi credentials
+ * (SSID_LEN=0 is a validation error, not a clear request), so a persisted test
+ * SSID would leave the board unable to rejoin the real network on its own with
+ * no way to undo it short of a fresh flash. Instead exercises the safe, real,
+ * non-destructive path: toggling SET_WIFI_ENABLED off and back on and
+ * confirming the board reassociates with whatever's already configured (falling
+ * back to {@code secrets.h} the first time this command family is ever used).
  * NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
@@ -50,8 +52,7 @@ public final class WifiConfigManualCheck {
 			WifiStatus baseline = readStatus(client);
 			System.out.println("baseline: " + baseline);
 			check("baseline ENABLED", baseline.enabled);
-			check("baseline CONNECTED (assumes the board already joins a real network at boot)",
-					baseline.connected);
+			check("baseline CONNECTED (assumes the board already joins a real network at boot)", baseline.connected);
 
 			System.out.println("-> validation: SET_WIFI_CONFIG with SSID_LEN=0 should NACK");
 			expectNack(client, buildSetWifiConfigPayload("", "", 0));
@@ -172,8 +173,8 @@ public final class WifiConfigManualCheck {
 
 		@Override
 		public String toString() {
-			return "WIFI_STATUS_RESPONSE ENABLED=" + enabled + " CONNECTED=" + connected + " SSID=\"" + ssid
-					+ "\" IP=" + ip;
+			return "WIFI_STATUS_RESPONSE ENABLED=" + enabled + " CONNECTED=" + connected + " SSID=\"" + ssid + "\" IP="
+					+ ip;
 		}
 	}
 }

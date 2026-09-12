@@ -18,15 +18,18 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of LOG_MESSAGE (doc/PROTOCOL.md §0x0005) - a bidirectional
- * debugging/synchronization utility requested directly: "we could make the log frame bidirectional,
- * so it could be put inside a macro by the PC and when executed just repeated back - the PC than
- * could wait for receiving that frame (e.g. for timing or for waiting for macro completion before
- * sending more commands)." First confirms a live LOG_MESSAGE gets both a bare ACK and a separate
- * echoed event with the same payload; then records a macro with two LOG_MESSAGE markers around a
- * PAUSE, plays it back, and uses {@link CommandClient#waitForLogMessage} to both (a) know when
- * playback reaches/finishes each marker and (b) measure the elapsed time between them against the
- * PAUSE's own known duration. NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of LOG_MESSAGE (doc/PROTOCOL.md §0x0005) -
+ * a bidirectional debugging/synchronization utility requested directly: "we
+ * could make the log frame bidirectional, so it could be put inside a macro by
+ * the PC and when executed just repeated back - the PC than could wait for
+ * receiving that frame (e.g. for timing or for waiting for macro completion
+ * before sending more commands)." First confirms a live LOG_MESSAGE gets both a
+ * bare ACK and a separate echoed event with the same payload; then records a
+ * macro with two LOG_MESSAGE markers around a PAUSE, plays it back, and uses
+ * {@link CommandClient#waitForLogMessage} to both (a) know when playback
+ * reaches/finishes each marker and (b) measure the elapsed time between them
+ * against the PAUSE's own known duration. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -37,7 +40,8 @@ public final class LogMessageManualCheck {
 
 	private static final String MACRO_PATH = "/logtest.macro";
 	private static final int PAUSE_MS = 1000;
-	// Generous margin around PAUSE_MS - this is confirming "roughly the right ballpark", not
+	// Generous margin around PAUSE_MS - this is confirming "roughly the right
+	// ballpark", not
 	// asserting sub-millisecond waveform timing accuracy.
 	private static final long TIMING_TOLERANCE_MS = 400;
 	private static final long WAIT_TIMEOUT_MS = 10_000;
@@ -60,11 +64,16 @@ public final class LogMessageManualCheck {
 		try {
 			byte[] liveMarker = "live-probe".getBytes(StandardCharsets.UTF_8);
 			System.out.println("-> live LOG_MESSAGE round trip");
-			// waitForLogMessage() must be armed *before* sending - firmware pushes the echo before
-			// it ACKs (pushLogMessage() then ctx.ack()), so calling send() first here would race:
-			// the echo could arrive and find no listener registered yet. Not an issue for the
-			// intended macro use case below, where PLAY_MACRO's own ACK ("started", not "finished")
-			// always leaves plenty of real time to arm the wait before playback actually reaches
+			// waitForLogMessage() must be armed *before* sending - firmware pushes the echo
+			// before
+			// it ACKs (pushLogMessage() then ctx.ack()), so calling send() first here would
+			// race:
+			// the echo could arrive and find no listener registered yet. Not an issue for
+			// the
+			// intended macro use case below, where PLAY_MACRO's own ACK ("started", not
+			// "finished")
+			// always leaves plenty of real time to arm the wait before playback actually
+			// reaches
 			// the marker.
 			Exception[] waitError = new Exception[1];
 			Thread waiter = new Thread(() -> {
@@ -103,11 +112,15 @@ public final class LogMessageManualCheck {
 			check("recorded exactly 3 entries", entries.size() == 3);
 
 			System.out.println("-> PLAY_MACRO " + MACRO_PATH);
-			// Both marker listeners must be armed *before* sending PLAY_MACRO - handlePlayMacro()
+			// Both marker listeners must be armed *before* sending PLAY_MACRO -
+			// handlePlayMacro()
 			// (main.cpp) calls gMacroPlayer.start() synchronously before ctx.ack(), and
-			// stepMacroPlayback() runs later in that same loop() iteration, so the "start" echo can
-			// reach the PC within microseconds of PLAY_MACRO's own ACK - easily faster than this
-			// thread waking up from send() and only then calling waitForLogMessage(). Same race the
+			// stepMacroPlayback() runs later in that same loop() iteration, so the "start"
+			// echo can
+			// reach the PC within microseconds of PLAY_MACRO's own ACK - easily faster than
+			// this
+			// thread waking up from send() and only then calling waitForLogMessage(). Same
+			// race the
 			// live round trip above guards against, just tighter here.
 			long[] playStart = { 0 };
 			long[] startAt = { -1 };

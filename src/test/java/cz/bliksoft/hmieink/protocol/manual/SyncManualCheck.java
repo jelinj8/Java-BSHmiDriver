@@ -13,15 +13,17 @@ import cz.bliksoft.hmieink.protocol.sync.SyncMode;
 import cz.bliksoft.hmieink.protocol.sync.SyncResult;
 
 /**
- * Manual, real-hardware verification of {@link FolderSync} end-to-end - the algorithm's full
- * PC_MASTER/DEVICE_MASTER/MERGE decision tree is already exhaustively covered by {@code
- * FolderSyncTest} against an in-memory fake, so this focuses on what only real hardware can
- * confirm: the actual FILE_LIST/DOWNLOAD/UPLOAD/DELETE round-trip, and specifically that uploading
- * into a not-yet-existing nested subdirectory now works (firmware design note 94's
- * {@code StorageManager::upload()} auto-mkdir fix - this test's local tree deliberately includes a
- * {@code sub/} subdirectory to exercise exactly that). Uses a throwaway device-side folder
- * ({@code /sync_test_<random>}) so it never collides with real content. NOT part of the automated
- * {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of {@link FolderSync} end-to-end - the
+ * algorithm's full PC_MASTER/DEVICE_MASTER/MERGE decision tree is already
+ * exhaustively covered by {@code
+ * FolderSyncTest} against an in-memory fake, so this focuses on what only real
+ * hardware can confirm: the actual FILE_LIST/DOWNLOAD/UPLOAD/DELETE round-trip,
+ * and specifically that uploading into a not-yet-existing nested subdirectory
+ * now works (firmware design note 94's {@code StorageManager::upload()}
+ * auto-mkdir fix - this test's local tree deliberately includes a {@code sub/}
+ * subdirectory to exercise exactly that). Uses a throwaway device-side folder
+ * ({@code /sync_test_<random>}) so it never collides with real content. NOT
+ * part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \

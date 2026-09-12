@@ -18,23 +18,26 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Rasterizes a TTF/system {@link Font} into the custom-font glyph set DRAW_TEXT FONT_ID=0xFF
- * consumes (doc/PROTOCOL.md §12.6.1, firmware-BSHMIEinkDevice repository - one {@code .gly} file
- * per codepage byte 0x00-0xFF, plus the mandatory {@code XX.gly} fallback/line-height-reference
- * glyph).
+ * Rasterizes a TTF/system {@link Font} into the custom-font glyph set DRAW_TEXT
+ * FONT_ID=0xFF consumes (doc/PROTOCOL.md §12.6.1, firmware-BSHMIEinkDevice
+ * repository - one {@code .gly} file per codepage byte 0x00-0xFF, plus the
+ * mandatory {@code XX.gly} fallback/line-height-reference glyph).
  *
  * <p>
- * Every glyph is rendered onto a canvas {@code cellHeight} pixels tall (the font's own
- * ascent+descent at the chosen point size), with the character positioned at its correct
- * baseline - then trimmed to remove blank rows from the <em>top only</em>, never the bottom. This
- * is what makes device-side bottom-alignment (§12.6.1: "bottom aligned, use XX as line height
- * reference") produce typographically correct results even for descenders (g/j/p/q/y): a
- * descender's ink genuinely reaches near the cell's bottom row, so it's never trimmed away, while a
- * glyph with no descender (most of them) naturally has a shorter saved bitmap whose own bottom row
- * already sits exactly on the baseline - bottom-pinning it on-device reproduces the same baseline
- * position the glyph was rendered at, without needing any ascent/descent metadata in the wire
- * format itself. {@code XX} is the one exception - saved at the full, untrimmed {@code cellHeight},
- * since it exists specifically to define what that height <em>is</em>.
+ * Every glyph is rendered onto a canvas {@code cellHeight} pixels tall (the
+ * font's own ascent+descent at the chosen point size), with the character
+ * positioned at its correct baseline - then trimmed to remove blank rows from
+ * the <em>top only</em>, never the bottom. This is what makes device-side
+ * bottom-alignment (§12.6.1: "bottom aligned, use XX as line height reference")
+ * produce typographically correct results even for descenders (g/j/p/q/y): a
+ * descender's ink genuinely reaches near the cell's bottom row, so it's never
+ * trimmed away, while a glyph with no descender (most of them) naturally has a
+ * shorter saved bitmap whose own bottom row already sits exactly on the
+ * baseline - bottom-pinning it on-device reproduces the same baseline position
+ * the glyph was rendered at, without needing any ascent/descent metadata in the
+ * wire format itself. {@code XX} is the one exception - saved at the full,
+ * untrimmed {@code cellHeight}, since it exists specifically to define what
+ * that height <em>is</em>.
  */
 public final class GlyphGenerator {
 
@@ -52,10 +55,11 @@ public final class GlyphGenerator {
 	}
 
 	/**
-	 * Rasterizes one Unicode codepoint (BMP only - this project's codepage-based custom font has no
-	 * use for astral codepoints). {@code fixedWidth}, if {@code > 0}, forces this canvas width with
-	 * the glyph horizontally centered (for a monospace-look variant of an otherwise proportional
-	 * font); {@code <= 0} uses the font's own natural advance width for this character.
+	 * Rasterizes one Unicode codepoint (BMP only - this project's codepage-based
+	 * custom font has no use for astral codepoints). {@code fixedWidth}, if
+	 * {@code > 0}, forces this canvas width with the glyph horizontally centered
+	 * (for a monospace-look variant of an otherwise proportional font);
+	 * {@code <= 0} uses the font's own natural advance width for this character.
 	 * {@code trimTop=false} keeps the full {@code cellHeight} untrimmed - only
 	 * {@link #renderFallbackGlyph} needs that.
 	 */
@@ -83,7 +87,10 @@ public final class GlyphGenerator {
 		return new RasterGlyph(canvasWidth, glyphHeight, packBits(canvas, topInkRow, canvasWidth, glyphHeight));
 	}
 
-	/** The {@code XX} fallback/line-height-reference glyph - see this class's own doc for why it's untrimmed. */
+	/**
+	 * The {@code XX} fallback/line-height-reference glyph - see this class's own
+	 * doc for why it's untrimmed.
+	 */
 	public static RasterGlyph renderFallbackGlyph(Font font, int fallbackCodepoint, int ascent, int cellHeight,
 			int fixedWidth) {
 		return renderGlyph(font, fallbackCodepoint, ascent, cellHeight, fixedWidth, false);
@@ -116,7 +123,10 @@ public final class GlyphGenerator {
 		return bitmap;
 	}
 
-	/** Serializes one {@link RasterGlyph} to the exact {@code .gly} byte layout (doc/PROTOCOL.md §12.6.1). */
+	/**
+	 * Serializes one {@link RasterGlyph} to the exact {@code .gly} byte layout
+	 * (doc/PROTOCOL.md §12.6.1).
+	 */
 	public static byte[] toGlyBytes(RasterGlyph glyph) {
 		ByteBuffer buf = ByteBuffer.allocate(9 + glyph.packedBitmap.length).order(ByteOrder.LITTLE_ENDIAN);
 		buf.put(GLY_MAGIC);
@@ -133,10 +143,11 @@ public final class GlyphGenerator {
 	}
 
 	/**
-	 * Generates a full glyph set - one {@code <NN>.gly} per entry of {@code byteToCodepoint} (NN = 2
-	 * uppercase hex digits of the map's key, 0x00-0xFF) plus {@code XX.gly} for
-	 * {@code fallbackCodepoint} - into {@code outputDir}. {@code fixedWidth <= 0} means proportional
-	 * (each glyph keeps the font's own natural advance width); {@code > 0} forces every glyph
+	 * Generates a full glyph set - one {@code <NN>.gly} per entry of
+	 * {@code byteToCodepoint} (NN = 2 uppercase hex digits of the map's key,
+	 * 0x00-0xFF) plus {@code XX.gly} for {@code fallbackCodepoint} - into
+	 * {@code outputDir}. {@code fixedWidth <= 0} means proportional (each glyph
+	 * keeps the font's own natural advance width); {@code > 0} forces every glyph
 	 * (fallback included) to that width, centered.
 	 */
 	public static void generateGlyphSet(Font font, Map<Integer, Integer> byteToCodepoint, int fallbackCodepoint,
@@ -159,11 +170,12 @@ public final class GlyphGenerator {
 	}
 
 	/**
-	 * {@link BdfFont} counterpart of {@link #generateGlyphSet(Font, Map, int, int, Path)} - a
-	 * codepage byte whose codepoint isn't covered by {@code font} is skipped (reported on
-	 * {@code System.out}) rather than forced to some substitute, letting the device's own {@code XX}
-	 * fallback handle it at draw time (doc/PROTOCOL.md §12.6.1) exactly as a missing/corrupt
-	 * individual glyph file already would.
+	 * {@link BdfFont} counterpart of
+	 * {@link #generateGlyphSet(Font, Map, int, int, Path)} - a codepage byte whose
+	 * codepoint isn't covered by {@code font} is skipped (reported on
+	 * {@code System.out}) rather than forced to some substitute, letting the
+	 * device's own {@code XX} fallback handle it at draw time (doc/PROTOCOL.md
+	 * §12.6.1) exactly as a missing/corrupt individual glyph file already would.
 	 */
 	public static void generateGlyphSet(BdfFont font, Map<Integer, Integer> byteToCodepoint, int fallbackCodepoint,
 			int fixedWidth, Path outputDir) throws IOException {
@@ -185,12 +197,16 @@ public final class GlyphGenerator {
 						+ " - not covered by this BDF font, will fall back to XX on-device)");
 				continue;
 			}
-			writeGlyFile(outputDir.resolve(hexBaseName(codepageByte) + ".gly"), font.renderGlyph(codepoint, fixedWidth, true));
+			writeGlyFile(outputDir.resolve(hexBaseName(codepageByte) + ".gly"),
+					font.renderGlyph(codepoint, fixedWidth, true));
 		}
 	}
 
-	/** The widest natural advance width across a set of codepoints, at this font/size - a sensible
-	 * {@code fixedWidth} for a monospace-look variant that clips nothing. */
+	/**
+	 * The widest natural advance width across a set of codepoints, at this
+	 * font/size - a sensible {@code fixedWidth} for a monospace-look variant that
+	 * clips nothing.
+	 */
 	public static int maxNaturalWidth(Font font, Iterable<Integer> codepoints) {
 		FontMetrics metrics = metricsOf(font);
 		int max = 1;

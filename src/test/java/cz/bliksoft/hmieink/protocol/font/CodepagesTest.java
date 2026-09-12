@@ -21,7 +21,8 @@ class CodepagesTest {
 	@Test
 	void windows1250UpperHalfMapsCzechDiacritics() {
 		Map<Integer, Integer> map = Codepages.singleByteCharsetRange("windows-1250", 0x80, 0xFF);
-		// 0xE8 is 'č' (U+010D) in windows-1250 - a concrete, well-known checkpoint value.
+		// 0xE8 is 'č' (U+010D) in windows-1250 - a concrete, well-known checkpoint
+		// value.
 		assertEquals(0x010D, (int) map.get(0xE8));
 	}
 

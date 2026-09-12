@@ -18,13 +18,14 @@ import cz.bliksoft.hmieink.protocol.TlvCodec;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of SET_DEVICE_NAME / CONFIG_BACKUP / CONFIG_RESTORE
- * (doc/PROTOCOL.md §13.1/§13.3) and the SD-over-NVS layered config resolution (design note 72).
- * Config-blob TYPE 0x01 is DEVICE_NAME, firmware's own device-defined namespace (independent of
- * the handshake's §5.2 TYPE namespace) - this tool decodes it with the same generic
- * {@link TlvCodec} used for the handshake, purely to assert against in tests; a real client is
- * meant to treat CONFIG_BACKUP_DATA as opaque. NOT part of the automated {@code mvn test} suite -
- * run it directly:
+ * Manual, real-hardware verification of SET_DEVICE_NAME / CONFIG_BACKUP /
+ * CONFIG_RESTORE (doc/PROTOCOL.md §13.1/§13.3) and the SD-over-NVS layered
+ * config resolution (design note 72). Config-blob TYPE 0x01 is DEVICE_NAME,
+ * firmware's own device-defined namespace (independent of the handshake's §5.2
+ * TYPE namespace) - this tool decodes it with the same generic {@link TlvCodec}
+ * used for the handshake, purely to assert against in tests; a real client is
+ * meant to treat CONFIG_BACKUP_DATA as opaque. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -112,9 +113,10 @@ public final class ConfigManualCheck {
 	}
 
 	/**
-	 * Design note 72: NVS holds "SdLayerTest" persisted; the SD card's own /device.config, once
-	 * present, should override it to "FROM-SD-CARD" after a reboot - and the NVS-persisted value
-	 * underneath must stay untouched throughout, confirmed once the SD file is removed again.
+	 * Design note 72: NVS holds "SdLayerTest" persisted; the SD card's own
+	 * /device.config, once present, should override it to "FROM-SD-CARD" after a
+	 * reboot - and the NVS-persisted value underneath must stay untouched
+	 * throughout, confirmed once the SD file is removed again.
 	 */
 	private static void runSdLayeringTest(CommandClient client, SerialFrameTransport transport, String baselineName)
 			throws Exception {
@@ -137,14 +139,13 @@ public final class ConfigManualCheck {
 		System.out.println("-> SD layering: deleting " + SD_CONFIG_PATH + " and resetting again");
 		client.send(CommandId.FILE_DELETE, buildVolumePathPayload(Volume.SD, SD_CONFIG_PATH));
 		transport.resetToRunMode();
-		check("falls back to the NVS layer once the SD file is gone",
-				"SdLayerTest".equals(currentDeviceName(client)));
+		check("falls back to the NVS layer once the SD file is gone", "SdLayerTest".equals(currentDeviceName(client)));
 	}
 
 	private static void uploadToSd(CommandClient client, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.SD);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

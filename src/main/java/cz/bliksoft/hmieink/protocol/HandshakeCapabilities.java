@@ -6,10 +6,11 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Typed view over a decoded HANDSHAKE_RESPONSE payload (doc/PROTOCOL.md §5.2). Unknown/missing
- * TLVs are tolerated - accessors return {@code -1}/{@code null}/empty rather than throwing, per
- * §5.1's "unknown TYPE -> skip, never an error" (older or newer firmware may not report every
- * field this class knows about).
+ * Typed view over a decoded HANDSHAKE_RESPONSE payload (doc/PROTOCOL.md §5.2).
+ * Unknown/missing TLVs are tolerated - accessors return
+ * {@code -1}/{@code null}/empty rather than throwing, per §5.1's "unknown TYPE
+ * -> skip, never an error" (older or newer firmware may not report every field
+ * this class knows about).
  */
 public final class HandshakeCapabilities {
 
@@ -49,7 +50,10 @@ public final class HandshakeCapabilities {
 		return new HandshakeCapabilities(TlvCodec.decode(handshakeResponsePayload));
 	}
 
-	/** Direct access to a TLV by TYPE, for a field this class doesn't have a named getter for yet. */
+	/**
+	 * Direct access to a TLV by TYPE, for a field this class doesn't have a named
+	 * getter for yet.
+	 */
 	public Optional<Tlv> get(int type) {
 		return Optional.ofNullable(byType.get(type));
 	}
@@ -124,9 +128,10 @@ public final class HandshakeCapabilities {
 	}
 
 	/**
-	 * Derived from {@link #getPixelPitchXUm()} - doc/PROTOCOL.md design note 42: the wire reports
-	 * raw pixel pitch, not a pre-rounded DPI, so this division is deliberately left to the client.
-	 * {@link Double#NaN} if the device didn't report a pitch.
+	 * Derived from {@link #getPixelPitchXUm()} - doc/PROTOCOL.md design note 42:
+	 * the wire reports raw pixel pitch, not a pre-rounded DPI, so this division is
+	 * deliberately left to the client. {@link Double#NaN} if the device didn't
+	 * report a pitch.
 	 */
 	public double getDpiX() {
 		int pitch = getPixelPitchXUm();
@@ -138,17 +143,26 @@ public final class HandshakeCapabilities {
 		return pitch > 0 ? UM_PER_INCH / pitch : Double.NaN;
 	}
 
-	/** What THIS handshake actually achieved (doc/PROTOCOL.md §5.3) - one of {@link AuthLevel}'s values. */
+	/**
+	 * What THIS handshake actually achieved (doc/PROTOCOL.md §5.3) - one of
+	 * {@link AuthLevel}'s values.
+	 */
 	public int getGrantedLevel() {
 		return get(TLV_GRANTED_LEVEL).map(Tlv::asU8).orElse(AuthLevel.NONE);
 	}
 
-	/** Whether a usage PIN is currently configured on the device - informational, not itself sensitive. */
+	/**
+	 * Whether a usage PIN is currently configured on the device - informational,
+	 * not itself sensitive.
+	 */
 	public boolean isUsagePinRequired() {
 		return get(TLV_USAGE_PIN_REQUIRED).map(Tlv::asU8).orElse(0) != 0;
 	}
 
-	/** Whether an admin PIN is currently configured on the device - informational, not itself sensitive. */
+	/**
+	 * Whether an admin PIN is currently configured on the device - informational,
+	 * not itself sensitive.
+	 */
 	public boolean isAdminPinRequired() {
 		return get(TLV_ADMIN_PIN_REQUIRED).map(Tlv::asU8).orElse(0) != 0;
 	}

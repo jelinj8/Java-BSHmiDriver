@@ -14,8 +14,9 @@ import org.junit.jupiter.api.Test;
 import cz.bliksoft.hmieink.protocol.script.ScriptRunner;
 
 /**
- * In the same package as {@link CommandClientTest} specifically to reuse its {@link
- * FakeFrameTransport} test double (package-private) rather than inventing a second one.
+ * In the same package as {@link CommandClientTest} specifically to reuse its
+ * {@link FakeFrameTransport} test double (package-private) rather than
+ * inventing a second one.
  */
 class ScriptRunnerTest {
 
@@ -76,7 +77,8 @@ class ScriptRunnerTest {
 			sleepUnchecked(30);
 			transport.pushUnsolicited(new Frame(CommandId.LOG_MESSAGE, 0, "wrong".getBytes(StandardCharsets.UTF_8)));
 			sleepUnchecked(30);
-			transport.pushUnsolicited(new Frame(CommandId.LOG_MESSAGE, 1, "boot_done".getBytes(StandardCharsets.UTF_8)));
+			transport
+					.pushUnsolicited(new Frame(CommandId.LOG_MESSAGE, 1, "boot_done".getBytes(StandardCharsets.UTF_8)));
 		});
 		pusher.start();
 

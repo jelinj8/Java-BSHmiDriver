@@ -1,8 +1,8 @@
 package cz.bliksoft.hmieink.protocol;
 
 /**
- * ACK/NACK status codes (doc/PROTOCOL.md §10). Mirrors firmware's {@code Protocol.h}
- * {@code status} namespace - keep both in sync.
+ * ACK/NACK status codes (doc/PROTOCOL.md §10). Mirrors firmware's
+ * {@code Protocol.h} {@code status} namespace - keep both in sync.
  */
 public final class Status {
 
@@ -23,7 +23,10 @@ public final class Status {
 	public static final int PIN_UNAVAILABLE = 0x0B;
 	public static final int OTA_HASH_MISMATCH = 0x0C;
 	public static final int OTA_NOT_STAGED = 0x0D;
-	/** Granted access level insufficient for the command's effective required tier (doc/PROTOCOL.md §5.3). */
+	/**
+	 * Granted access level insufficient for the command's effective required tier
+	 * (doc/PROTOCOL.md §5.3).
+	 */
 	public static final int NOT_AUTHORIZED = 0x0E;
 	public static final int UNKNOWN_ERROR = 0xFF;
 }

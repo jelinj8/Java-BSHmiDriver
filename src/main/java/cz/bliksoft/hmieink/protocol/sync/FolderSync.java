@@ -17,27 +17,33 @@ import cz.bliksoft.hmieink.protocol.FileEntry;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
 
 /**
- * Recursively syncs a local folder against a {@link RemoteFileStore} (device storage) in one of
- * three {@link SyncMode}s. Change detection has no device-side timestamps to work with
- * (doc/PROTOCOL.md §14.1's FILE_LIST_RESPONSE carries only NAME/ENTRY_TYPE/SIZE) - {@link
- * SyncMode#MERGE} instead compares SHA-256 content hashes against a small local {@link
- * SyncManifest} recording each path's hash as of the last successful sync, letting it tell
- * "unchanged since last sync" apart from "changed on this side" independently for each side.
- * {@link SyncMode#PC_MASTER}/{@link SyncMode#DEVICE_MASTER} need no such history - they simply make
- * the target side an exact mirror of the source side, deleting whatever the target has that the
- * source doesn't.
+ * Recursively syncs a local folder against a {@link RemoteFileStore} (device
+ * storage) in one of three {@link SyncMode}s. Change detection has no
+ * device-side timestamps to work with (doc/PROTOCOL.md §14.1's
+ * FILE_LIST_RESPONSE carries only NAME/ENTRY_TYPE/SIZE) -
+ * {@link SyncMode#MERGE} instead compares SHA-256 content hashes against a
+ * small local {@link SyncManifest} recording each path's hash as of the last
+ * successful sync, letting it tell "unchanged since last sync" apart from
+ * "changed on this side" independently for each side.
+ * {@link SyncMode#PC_MASTER}/{@link SyncMode#DEVICE_MASTER} need no such
+ * history - they simply make the target side an exact mirror of the source
+ * side, deleting whatever the target has that the source doesn't.
  *
  * <p>
- * A local subdirectory is skipped (reported in {@link SyncResult#skippedLocalDirectories}, not
- * silently mishandled) whenever {@link RemoteFileStore#supportsDirectories()} is {@code false}
- * (VOLUME=PSRAM, which is flat) - only top-level files sync against such a store.
+ * A local subdirectory is skipped (reported in
+ * {@link SyncResult#skippedLocalDirectories}, not silently mishandled) whenever
+ * {@link RemoteFileStore#supportsDirectories()} is {@code false} (VOLUME=PSRAM,
+ * which is flat) - only top-level files sync against such a store.
  */
 public final class FolderSync {
 
 	private FolderSync() {
 	}
 
-	/** Convenience overload binding directly to a live device + volume + base device path. */
+	/**
+	 * Convenience overload binding directly to a live device + volume + base device
+	 * path.
+	 */
 	public static SyncResult sync(Path localDir, HmiDevice device, int volume, String devicePath, SyncMode mode,
 			Path manifestFile) throws IOException {
 		return sync(localDir, new HmiDeviceRemoteFileStore(device, volume, devicePath), mode, manifestFile, false);
@@ -49,18 +55,22 @@ public final class FolderSync {
 	}
 
 	/**
-	 * @param dryRun when true, computes and returns exactly what a real run would do (including
-	 *     what {@link SyncResult#conflicted} would contain) without uploading, downloading, deleting,
-	 *     or touching the manifest file - useful to preview a mirror mode's deletions before
-	 *     committing to them.
+	 * @param dryRun when true, computes and returns exactly what a real run would
+	 *               do (including what {@link SyncResult#conflicted} would contain)
+	 *               without uploading, downloading, deleting, or touching the
+	 *               manifest file - useful to preview a mirror mode's deletions
+	 *               before committing to them.
 	 */
 	public static SyncResult sync(Path localDir, RemoteFileStore remote, SyncMode mode, Path manifestFile,
 			boolean dryRun) throws IOException {
 		SyncResult result = new SyncResult();
 		Map<String, Path> localFiles = new LinkedHashMap<>();
-		// Excluded so the manifest never syncs itself as if it were a regular asset - a real risk if
-		// a caller's manifestFile happens to live inside localDir (self-referential: hashing the
-		// manifest changes the manifest, so its own entry would go stale every single run).
+		// Excluded so the manifest never syncs itself as if it were a regular asset - a
+		// real risk if
+		// a caller's manifestFile happens to live inside localDir (self-referential:
+		// hashing the
+		// manifest changes the manifest, so its own entry would go stale every single
+		// run).
 		Path excludedManifest = manifestFile.toAbsolutePath().normalize();
 		indexLocal(localDir, localDir, remote.supportsDirectories(), excludedManifest, localFiles, result);
 		Map<String, FileEntry> remoteFiles = new LinkedHashMap<>();
@@ -68,17 +78,17 @@ public final class FolderSync {
 		SyncManifest manifest = SyncManifest.loadOrEmpty(manifestFile);
 
 		switch (mode) {
-			case PC_MASTER:
-				pcMaster(remote, localFiles, remoteFiles, manifest, result, dryRun);
-				break;
-			case DEVICE_MASTER:
-				deviceMaster(localDir, remote, localFiles, remoteFiles, manifest, result, dryRun);
-				break;
-			case MERGE:
-				merge(localDir, remote, localFiles, remoteFiles, manifest, result, dryRun);
-				break;
-			default:
-				throw new IllegalArgumentException("unhandled mode " + mode);
+		case PC_MASTER:
+			pcMaster(remote, localFiles, remoteFiles, manifest, result, dryRun);
+			break;
+		case DEVICE_MASTER:
+			deviceMaster(localDir, remote, localFiles, remoteFiles, manifest, result, dryRun);
+			break;
+		case MERGE:
+			merge(localDir, remote, localFiles, remoteFiles, manifest, result, dryRun);
+			break;
+		default:
+			throw new IllegalArgumentException("unhandled mode " + mode);
 		}
 
 		if (!dryRun) {

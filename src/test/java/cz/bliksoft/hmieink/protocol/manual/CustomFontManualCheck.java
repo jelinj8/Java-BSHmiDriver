@@ -18,20 +18,25 @@ import cz.bliksoft.hmieink.protocol.Volume;
 import cz.bliksoft.hmieink.protocol.WriteFlags;
 
 /**
- * Manual, real-hardware verification of the custom folder-driven proportional font -
- * {@code DRAW_TEXT FONT_ID=0xFF} and {@code SET_CUSTOM_FONT_FOLDER} (doc/PROTOCOL.md
- * §12.6.1/§12.6.2). Hand-builds three small {@code .gly} glyph files (a 5x7 'A', a shorter 4x5 'B'
- * - deliberately shorter than 'A' to make bottom-alignment visible - and a 6x7 box-shaped {@code
- * XX} fallback/line-height reference), uploads them via ordinary {@code FILE_UPLOAD}, then
- * exercises: the NACK(FILE_NOT_FOUND) pre-flight before any folder is ever configured; direct
- * ({@code S:}/{@code F:}) and once-resolved PSRAM-indirected ({@code R:}) folder selection;
- * proportional-width wrap/alignment/zero-spacing "welding" and the {@code XX} fallback for an
- * unmapped byte, drawn on the real panel for visual confirmation; and the remaining NACK edge
- * cases ({@code BAD_PARAMETERS} for a malformed/missing prefix, {@code FILE_NOT_FOUND} for a
- * nonexistent {@code R:} pointer file, a nonexistent folder, and a folder missing its own {@code
- * XX.gly}). Prefers {@code VOLUME=SD} when a card is present, falling back to {@code
- * VOLUME=INTERNAL} (flash) otherwise - both are valid custom-font targets (PSRAM is not, since it
- * has no subdirectories). NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of the custom folder-driven proportional
+ * font - {@code DRAW_TEXT FONT_ID=0xFF} and {@code SET_CUSTOM_FONT_FOLDER}
+ * (doc/PROTOCOL.md §12.6.1/§12.6.2). Hand-builds three small {@code .gly} glyph
+ * files (a 5x7 'A', a shorter 4x5 'B' - deliberately shorter than 'A' to make
+ * bottom-alignment visible - and a 6x7 box-shaped {@code
+ * XX} fallback/line-height reference), uploads them via ordinary
+ * {@code FILE_UPLOAD}, then exercises: the NACK(FILE_NOT_FOUND) pre-flight
+ * before any folder is ever configured; direct ({@code S:}/{@code F:}) and
+ * once-resolved PSRAM-indirected ({@code R:}) folder selection;
+ * proportional-width wrap/alignment/zero-spacing "welding" and the {@code XX}
+ * fallback for an unmapped byte, drawn on the real panel for visual
+ * confirmation; and the remaining NACK edge cases ({@code BAD_PARAMETERS} for a
+ * malformed/missing prefix, {@code FILE_NOT_FOUND} for a nonexistent {@code R:}
+ * pointer file, a nonexistent folder, and a folder missing its own {@code
+ * XX.gly}). Prefers {@code VOLUME=SD} when a card is present, falling back to
+ * {@code
+ * VOLUME=INTERNAL} (flash) otherwise - both are valid custom-font targets
+ * (PSRAM is not, since it has no subdirectories). NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -65,25 +70,26 @@ public final class CustomFontManualCheck {
 
 			System.out.println("-> DRAW_TEXT FONT_ID=0xFF before any SET_CUSTOM_FONT_FOLDER (fresh boot) - "
 					+ "expect NACK(FILE_NOT_FOUND)");
-			expectNack(client, CommandId.DRAW_TEXT, drawCustomPayload(10, 10, 0, TextAlign.LEFT, false, new byte[] { 0x41 }),
-					Status.FILE_NOT_FOUND);
+			expectNack(client, CommandId.DRAW_TEXT,
+					drawCustomPayload(10, 10, 0, TextAlign.LEFT, false, new byte[] { 0x41 }), Status.FILE_NOT_FOUND);
 
 			System.out.println("-> FILE_UPLOAD glyph set to /customfont/ on " + (sdPresent ? "SD" : "INTERNAL"));
-			upload(client, volume, "/customfont/41.gly", glyphFromArt(".###.", "#...#", "#...#", "#####", "#...#",
-					"#...#", "#...#"));
+			upload(client, volume, "/customfont/41.gly",
+					glyphFromArt(".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"));
 			upload(client, volume, "/customfont/42.gly", glyphFromArt("###.", "#..#", "###.", "#..#", "###."));
-			upload(client, volume, "/customfont/XX.gly", glyphFromArt("######", "#....#", "#....#", "#....#",
-					"#....#", "#....#", "######"));
+			upload(client, volume, "/customfont/XX.gly",
+					glyphFromArt("######", "#....#", "#....#", "#....#", "#....#", "#....#", "######"));
 
 			System.out.println("-> SET_CUSTOM_FONT_FOLDER " + volumePrefix + ":/customfont (direct path)");
 			setCustomFontFolder(client, volumePrefix + ":/customfont");
 
 			int y = 20;
 			System.out.println("-> DRAW_TEXT FONT_ID=0xFF \"AB\" + unmapped 0x43 (falls back to XX), LEFT, at y=" + y);
-			send(client, CommandId.DRAW_TEXT, drawCustomPayload(10, y, 0, TextAlign.LEFT, false, new byte[] { 0x41, 0x42, 0x43 }));
+			send(client, CommandId.DRAW_TEXT,
+					drawCustomPayload(10, y, 0, TextAlign.LEFT, false, new byte[] { 0x41, 0x42, 0x43 }));
 			y += 20;
-			System.out.println("-> DRAW_TEXT FONT_ID=0xFF \"ABAB\" welded (no extra spacing), CENTER, WIDTH=200, at y="
-					+ y);
+			System.out.println(
+					"-> DRAW_TEXT FONT_ID=0xFF \"ABAB\" welded (no extra spacing), CENTER, WIDTH=200, at y=" + y);
 			send(client, CommandId.DRAW_TEXT,
 					drawCustomPayload(10, y, 200, TextAlign.CENTER, false, new byte[] { 0x41, 0x42, 0x41, 0x42 }));
 			y += 20;
@@ -94,12 +100,14 @@ public final class CustomFontManualCheck {
 			y += 60;
 
 			System.out.println("-> FILE_UPLOAD /font_ptr.txt = \"" + volumePrefix + ":/customfont\" to VOLUME=PSRAM");
-			upload(client, Volume.PSRAM, "/font_ptr.txt", (volumePrefix + ":/customfont").getBytes(StandardCharsets.UTF_8));
+			upload(client, Volume.PSRAM, "/font_ptr.txt",
+					(volumePrefix + ":/customfont").getBytes(StandardCharsets.UTF_8));
 			System.out.println("-> SET_CUSTOM_FONT_FOLDER R:/font_ptr.txt (once-resolved PSRAM indirection)");
 			setCustomFontFolder(client, "R:/font_ptr.txt");
 			System.out.println("-> DRAW_TEXT FONT_ID=0xFF \"AB\" again at y=" + y
 					+ " (should look identical to the direct-path draw above)");
-			send(client, CommandId.DRAW_TEXT, drawCustomPayload(10, y, 0, TextAlign.LEFT, false, new byte[] { 0x41, 0x42 }));
+			send(client, CommandId.DRAW_TEXT,
+					drawCustomPayload(10, y, 0, TextAlign.LEFT, false, new byte[] { 0x41, 0x42 }));
 
 			System.out.println("-> sending REFRESH(MODE=0x01)");
 			try {
@@ -124,19 +132,19 @@ public final class CustomFontManualCheck {
 					+ "NACK(FILE_NOT_FOUND)");
 			expectNack(client, CommandId.SET_CUSTOM_FONT_FOLDER, setCustomFontFolderPayload("R:/no_such_pointer.txt"),
 					Status.FILE_NOT_FOUND);
-			System.out.println("-> SET_CUSTOM_FONT_FOLDER pointing at a nonexistent folder - expect "
-					+ "NACK(FILE_NOT_FOUND)");
+			System.out.println(
+					"-> SET_CUSTOM_FONT_FOLDER pointing at a nonexistent folder - expect " + "NACK(FILE_NOT_FOUND)");
 			expectNack(client, CommandId.SET_CUSTOM_FONT_FOLDER,
 					setCustomFontFolderPayload(volumePrefix + ":/no_such_folder_xyz"), Status.FILE_NOT_FOUND);
 
 			System.out.println("-> FILE_UPLOAD a folder with only 41.gly, no XX.gly, then SET_CUSTOM_FONT_FOLDER "
 					+ "it, then DRAW_TEXT FONT_ID=0xFF - expect NACK(FILE_NOT_FOUND) (no valid line-height "
 					+ "reference)");
-			upload(client, volume, "/customfont_noxx/41.gly", glyphFromArt(".###.", "#...#", "#...#", "#####",
-					"#...#", "#...#", "#...#"));
+			upload(client, volume, "/customfont_noxx/41.gly",
+					glyphFromArt(".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"));
 			setCustomFontFolder(client, volumePrefix + ":/customfont_noxx");
-			expectNack(client, CommandId.DRAW_TEXT, drawCustomPayload(10, 10, 0, TextAlign.LEFT, false, new byte[] { 0x41 }),
-					Status.FILE_NOT_FOUND);
+			expectNack(client, CommandId.DRAW_TEXT,
+					drawCustomPayload(10, 10, 0, TextAlign.LEFT, false, new byte[] { 0x41 }), Status.FILE_NOT_FOUND);
 
 			System.out.println();
 			if (failures == 0) {
@@ -151,8 +159,10 @@ public final class CustomFontManualCheck {
 		}
 	}
 
-	// Packs a glyph from '#'/'.' ASCII art rows into a .gly file (doc/PROTOCOL.md §12.6.1): "GLY1" +
-	// FORMAT_VERSION(1) + WIDTH(u16LE) + HEIGHT(u16LE) + packed 1bpp bitmap, row-major, MSB-first,
+	// Packs a glyph from '#'/'.' ASCII art rows into a .gly file (doc/PROTOCOL.md
+	// §12.6.1): "GLY1" +
+	// FORMAT_VERSION(1) + WIDTH(u16LE) + HEIGHT(u16LE) + packed 1bpp bitmap,
+	// row-major, MSB-first,
 	// bit=1=ink. All rows must be the same length.
 	private static byte[] glyphFromArt(String... rows) {
 		int height = rows.length;
@@ -215,8 +225,8 @@ public final class CustomFontManualCheck {
 
 	private static void upload(CommandClient client, int volume, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) volume);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

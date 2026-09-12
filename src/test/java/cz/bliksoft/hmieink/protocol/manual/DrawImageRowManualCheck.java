@@ -20,12 +20,13 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of DRAW_IMAGE_ROW (doc/PROTOCOL.md §12.x): uploads three
- * differently-sized icon tiles (each a black square inset with a white margin, so adjacent tiles
- * stay visually distinct even at SPACING=0), then draws the same three-icon row four times, once
- * per ALIGN value (LEFT/CENTER/RIGHT/BLOCK), each inside a visible outlined reference box (drawn
- * via DRAW_RECT) so the alignment is checkable directly against the box edges. NOT part of the
- * automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of DRAW_IMAGE_ROW (doc/PROTOCOL.md §12.x):
+ * uploads three differently-sized icon tiles (each a black square inset with a
+ * white margin, so adjacent tiles stay visually distinct even at SPACING=0),
+ * then draws the same three-icon row four times, once per ALIGN value
+ * (LEFT/CENTER/RIGHT/BLOCK), each inside a visible outlined reference box
+ * (drawn via DRAW_RECT) so the alignment is checkable directly against the box
+ * edges. NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -58,8 +59,8 @@ public final class DrawImageRowManualCheck {
 		try {
 			for (int i = 0; i < ICON_PATHS.length; i++) {
 				byte[] epi = EpiImageCodec.encode(buildIconTile(ICON_WIDTHS[i], ICON_HEIGHT));
-				System.out.println("-> FILE_UPLOAD " + ICON_PATHS[i] + " (" + ICON_WIDTHS[i] + "x" + ICON_HEIGHT
-						+ ", " + epi.length + " bytes)");
+				System.out.println("-> FILE_UPLOAD " + ICON_PATHS[i] + " (" + ICON_WIDTHS[i] + "x" + ICON_HEIGHT + ", "
+						+ epi.length + " bytes)");
 				upload(client, ICON_PATHS[i], epi);
 			}
 
@@ -146,8 +147,8 @@ public final class DrawImageRowManualCheck {
 
 	private static void upload(CommandClient client, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.INTERNAL);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

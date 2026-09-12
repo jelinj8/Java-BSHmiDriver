@@ -3,8 +3,8 @@ package cz.bliksoft.hmieink.protocol;
 /**
  * CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF, no reflect, no xorout).
  *
- * Reference vector (shared with the firmware implementation to guarantee both sides agree):
- * ASCII "123456789" (9 bytes) -&gt; 0x29B1.
+ * Reference vector (shared with the firmware implementation to guarantee both
+ * sides agree): ASCII "123456789" (9 bytes) -&gt; 0x29B1.
  */
 public final class Crc16 {
 

@@ -8,13 +8,15 @@ import cz.bliksoft.hmieink.protocol.CommandTimeoutException;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of {@link SerialFrameTransport}'s new RST/BOOT control methods
- * (doc/PROTOCOL.md design note 71) - the CH340 auto-program circuit's DTR/RTS lines drive the same
- * GPIO0 (BOOT)/EN (RST) lines the board's own physical buttons pull. Checks three things a real
- * board is needed for: (1) pressBoot()/releaseBoot() while firmware is already running produces a
- * real BUTTON_EVENT for BUTTON_ID.BOOT, exactly like a physical press; (2) resetToBootloader()
- * leaves the device unresponsive to the framed protocol (it's sitting in the ROM bootloader, not
- * running firmware); (3) resetToRunMode() recovers it back to normal, responsive operation. NOT
+ * Manual, real-hardware verification of {@link SerialFrameTransport}'s new
+ * RST/BOOT control methods (doc/PROTOCOL.md design note 71) - the CH340
+ * auto-program circuit's DTR/RTS lines drive the same GPIO0 (BOOT)/EN (RST)
+ * lines the board's own physical buttons pull. Checks three things a real board
+ * is needed for: (1) pressBoot()/releaseBoot() while firmware is already
+ * running produces a real BUTTON_EVENT for BUTTON_ID.BOOT, exactly like a
+ * physical press; (2) resetToBootloader() leaves the device unresponsive to the
+ * framed protocol (it's sitting in the ROM bootloader, not running firmware);
+ * (3) resetToRunMode() recovers it back to normal, responsive operation. NOT
  * part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>

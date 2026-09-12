@@ -15,15 +15,18 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Status;
 
 /**
- * Manual, real-hardware verification of GPIO_CONFIGURE/WRITE/READ/PLAY_PATTERN/EVENT
- * (doc/PROTOCOL.md §15). Assumes an LED (with resistor) on pin 15 (pin -&gt; resistor -&gt; LED -&gt; GND,
- * HIGH=on) and a button on pin 16 (pin -&gt; button -&gt; GND, INPUT_PULLUP, pressed=LOW/idle=HIGH) - the
- * defaults confirmed with the user for this check. Drives the LED directly and via
- * GPIO_PLAY_PATTERN (visual confirmation via {@link cz.bliksoft.hmieink.protocol.manual}-style
- * AskUserQuestion follow-up outside this tool), asserts GPIO_READ_RESPONSE agrees with what was
- * written at every step, exercises the NACK(PIN_UNAVAILABLE)/NACK(BAD_PARAMETERS) validation paths
- * programmatically, then opens a capture window for GPIO_EVENT pushes while the user presses the
- * button. NOT part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of
+ * GPIO_CONFIGURE/WRITE/READ/PLAY_PATTERN/EVENT (doc/PROTOCOL.md §15). Assumes
+ * an LED (with resistor) on pin 15 (pin -&gt; resistor -&gt; LED -&gt; GND,
+ * HIGH=on) and a button on pin 16 (pin -&gt; button -&gt; GND, INPUT_PULLUP,
+ * pressed=LOW/idle=HIGH) - the defaults confirmed with the user for this check.
+ * Drives the LED directly and via GPIO_PLAY_PATTERN (visual confirmation via
+ * {@link cz.bliksoft.hmieink.protocol.manual}-style AskUserQuestion follow-up
+ * outside this tool), asserts GPIO_READ_RESPONSE agrees with what was written
+ * at every step, exercises the NACK(PIN_UNAVAILABLE)/NACK(BAD_PARAMETERS)
+ * validation paths programmatically, then opens a capture window for GPIO_EVENT
+ * pushes while the user presses the button. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -67,8 +70,8 @@ public final class GpioManualCheck {
 		client.connect();
 		try {
 			// PIN_TYPE=NONE, PIN_LEN=0 (doc/PROTOCOL.md §5.3) - no pin offered.
-			HandshakeCapabilities caps = HandshakeCapabilities.parse(
-					client.send(CommandId.HANDSHAKE_REQUEST, new byte[] { 0, 0 }).getPayload());
+			HandshakeCapabilities caps = HandshakeCapabilities
+					.parse(client.send(CommandId.HANDSHAKE_REQUEST, new byte[] { 0, 0 }).getPayload());
 			byte[] availablePins = caps.getAvailableGpioPins();
 			StringBuilder pinsStr = new StringBuilder();
 			boolean hasLedPin = false, hasButtonPin = false;
@@ -85,11 +88,10 @@ public final class GpioManualCheck {
 			System.out.println("-> GPIO_CONFIGURE PIN_ID=" + LED_PIN + " MODE=OUTPUT");
 			send(client, CommandId.GPIO_CONFIGURE, new byte[] { (byte) LED_PIN, (byte) GpioMode.OUTPUT, 0 });
 
-			System.out.println("-> GPIO_CONFIGURE PIN_ID=" + BUTTON_PIN
-					+ " MODE=INPUT_PULLUP FLAGS=ENABLE_CHANGE_EVENTS");
-			send(client, CommandId.GPIO_CONFIGURE,
-					new byte[] { (byte) BUTTON_PIN, (byte) GpioMode.INPUT_PULLUP,
-							(byte) GpioConfigureFlags.ENABLE_CHANGE_EVENTS });
+			System.out.println(
+					"-> GPIO_CONFIGURE PIN_ID=" + BUTTON_PIN + " MODE=INPUT_PULLUP FLAGS=ENABLE_CHANGE_EVENTS");
+			send(client, CommandId.GPIO_CONFIGURE, new byte[] { (byte) BUTTON_PIN, (byte) GpioMode.INPUT_PULLUP,
+					(byte) GpioConfigureFlags.ENABLE_CHANGE_EVENTS });
 
 			System.out.println("-> GPIO_WRITE PIN_ID=" + LED_PIN + " VALUE=HIGH - LED should turn ON now");
 			send(client, CommandId.GPIO_WRITE, new byte[] { (byte) LED_PIN, 1 });
@@ -121,14 +123,16 @@ public final class GpioManualCheck {
 
 			System.out.println("-> validation: GPIO_CONFIGURE on an unavailable pin (" + UNAVAILABLE_PIN
 					+ ") should NACK(PIN_UNAVAILABLE)");
-			expectNack(client, CommandId.GPIO_CONFIGURE, new byte[] { (byte) UNAVAILABLE_PIN, (byte) GpioMode.OUTPUT, 0 },
-					Status.PIN_UNAVAILABLE);
-
-			System.out.println("-> validation: GPIO_CONFIGURE with MODE=PWM_OUTPUT (reserved) should NACK(BAD_PARAMETERS)");
 			expectNack(client, CommandId.GPIO_CONFIGURE,
-					new byte[] { (byte) LED_PIN, (byte) GpioMode.PWM_OUTPUT, 0 }, Status.BAD_PARAMETERS);
+					new byte[] { (byte) UNAVAILABLE_PIN, (byte) GpioMode.OUTPUT, 0 }, Status.PIN_UNAVAILABLE);
 
-			System.out.println("-> validation: GPIO_WRITE on the INPUT-configured button pin should NACK(BAD_PARAMETERS)");
+			System.out.println(
+					"-> validation: GPIO_CONFIGURE with MODE=PWM_OUTPUT (reserved) should NACK(BAD_PARAMETERS)");
+			expectNack(client, CommandId.GPIO_CONFIGURE, new byte[] { (byte) LED_PIN, (byte) GpioMode.PWM_OUTPUT, 0 },
+					Status.BAD_PARAMETERS);
+
+			System.out.println(
+					"-> validation: GPIO_WRITE on the INPUT-configured button pin should NACK(BAD_PARAMETERS)");
 			expectNack(client, CommandId.GPIO_WRITE, new byte[] { (byte) BUTTON_PIN, 1 }, Status.BAD_PARAMETERS);
 
 			int[] buttonRead = readPin(client, BUTTON_PIN);
@@ -141,18 +145,20 @@ public final class GpioManualCheck {
 			Thread.sleep(BUTTON_CAPTURE_WINDOW_MS);
 
 			int[] buttonReadAfter = readPin(client, BUTTON_PIN);
-			System.out.println("-> GPIO_READ_RESPONSE PIN_ID=" + BUTTON_PIN + " VALUE=" + buttonReadAfter[0]
-					+ " MODE=" + buttonReadAfter[1] + " (post-window poll)");
+			System.out.println("-> GPIO_READ_RESPONSE PIN_ID=" + BUTTON_PIN + " VALUE=" + buttonReadAfter[0] + " MODE="
+					+ buttonReadAfter[1] + " (post-window poll)");
 
 			if (gpioEvents.isEmpty()) {
-				System.out.println(
-						"   NOTE: no GPIO_EVENT frames were captured in the window - either the button wasn't "
+				System.out
+						.println("   NOTE: no GPIO_EVENT frames were captured in the window - either the button wasn't "
 								+ "pressed in time, or change-event delivery isn't working. Not counted as a hard "
 								+ "failure here (timing-dependent) - confirm with the follow-up question.");
 			} else {
 				System.out.println("   captured " + gpioEvents.size() + " GPIO_EVENT frame(s) during the window");
-				// A real button press should toggle the pin (pressed=LOW, released=HIGH) - consecutive
-				// captured values should alternate, not repeat, if debounce is working correctly.
+				// A real button press should toggle the pin (pressed=LOW, released=HIGH) -
+				// consecutive
+				// captured values should alternate, not repeat, if debounce is working
+				// correctly.
 				boolean alternates = true;
 				for (int i = 1; i < gpioEvents.size(); i++) {
 					if (gpioEvents.get(i)[1] == gpioEvents.get(i - 1)[1]) {

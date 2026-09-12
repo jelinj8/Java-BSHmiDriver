@@ -19,8 +19,10 @@ class GlyphGeneratorTest {
 	Path tempDir;
 
 	private static Font logicalFont() {
-		// A JDK logical font (always available, no external TTF file needed) - fine for testing the
-		// generator's own packing/trimming/file-writing logic, which is font-content-agnostic.
+		// A JDK logical font (always available, no external TTF file needed) - fine for
+		// testing the
+		// generator's own packing/trimming/file-writing logic, which is
+		// font-content-agnostic.
 		return new Font(Font.SANS_SERIF, Font.PLAIN, 16);
 	}
 
@@ -68,7 +70,8 @@ class GlyphGeneratorTest {
 	@Test
 	void blankGlyphKeepsExactlyOneRow() {
 		Font font = logicalFont();
-		// U+00A0 NO-BREAK SPACE renders no ink in any reasonable font - the "fully blank" path.
+		// U+00A0 NO-BREAK SPACE renders no ink in any reasonable font - the "fully
+		// blank" path.
 		RasterGlyph glyph = GlyphGenerator.renderGlyph(font, ' ', 14, 19, 0, true);
 		assertEquals(1, glyph.height);
 	}

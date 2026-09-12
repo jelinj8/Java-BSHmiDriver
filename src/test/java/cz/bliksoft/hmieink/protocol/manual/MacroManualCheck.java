@@ -20,16 +20,18 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of RECORD_MACRO/SAVE_MACRO/PLAY_MACRO/PAUSE (doc/PROTOCOL.md
- * §0x0A00). Records two DRAW_RECTs with a 500ms PAUSE between them, saves to VOLUME=INTERNAL,
- * downloads the saved file and confirms (via {@code MacroCodec}) it captured exactly the three
- * entries sent - byte-for-byte, not just "some file got created". Then plays it back, checking two
- * things that can't be seen by eye: that PLAY_MACRO's ACK arrives immediately (it means "started",
- * not "finished") and that a live command sent right after still gets a prompt response (proving
- * the device stays responsive to live traffic while a macro's PAUSE is in progress, rather than
- * blocking). Finally waits out the macro and reads the panel back (READ_SCREEN) to confirm both
- * rectangles actually got drawn. NOT part of the automated {@code mvn test} suite - run it
- * directly:
+ * Manual, real-hardware verification of
+ * RECORD_MACRO/SAVE_MACRO/PLAY_MACRO/PAUSE (doc/PROTOCOL.md §0x0A00). Records
+ * two DRAW_RECTs with a 500ms PAUSE between them, saves to VOLUME=INTERNAL,
+ * downloads the saved file and confirms (via {@code MacroCodec}) it captured
+ * exactly the three entries sent - byte-for-byte, not just "some file got
+ * created". Then plays it back, checking two things that can't be seen by eye:
+ * that PLAY_MACRO's ACK arrives immediately (it means "started", not
+ * "finished") and that a live command sent right after still gets a prompt
+ * response (proving the device stays responsive to live traffic while a macro's
+ * PAUSE is in progress, rather than blocking). Finally waits out the macro and
+ * reads the panel back (READ_SCREEN) to confirm both rectangles actually got
+ * drawn. NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -41,9 +43,12 @@ public final class MacroManualCheck {
 	private static final String MACRO_PATH = "/test.macro";
 	private static final int RECT_A_X = 20, RECT_A_Y = 20, RECT_SIZE = 30;
 	private static final int RECT_B_X = 100, RECT_B_Y = 20;
-	// Long enough that, even after entry 0's own physical partial-refresh finishes blocking loop()
-	// (a live REFRESH_NOW draw always does this, macro or not - unrelated to PAUSE itself), there's
-	// still a wide, safely-inside-the-pause window left to land the live-command probe in.
+	// Long enough that, even after entry 0's own physical partial-refresh finishes
+	// blocking loop()
+	// (a live REFRESH_NOW draw always does this, macro or not - unrelated to PAUSE
+	// itself), there's
+	// still a wide, safely-inside-the-pause window left to land the live-command
+	// probe in.
 	private static final int PAUSE_MS = 1500;
 	private static final long SETTLE_BEFORE_PROBE_MS = 900;
 	private static final long RESPONSIVE_THRESHOLD_MS = 300;
@@ -109,7 +114,8 @@ public final class MacroManualCheck {
 			// PIN_TYPE=NONE, PIN_LEN=0 (doc/PROTOCOL.md §5.3) - no pin offered.
 			long handshakeMs = timedSend(client, CommandId.HANDSHAKE_REQUEST, new byte[] { 0, 0 });
 			System.out.println("   HANDSHAKE_REQUEST responded in " + handshakeMs + "ms");
-			check("device stays responsive to live commands during a macro PAUSE", handshakeMs < RESPONSIVE_THRESHOLD_MS);
+			check("device stays responsive to live commands during a macro PAUSE",
+					handshakeMs < RESPONSIVE_THRESHOLD_MS);
 
 			System.out.println("-> waiting for macro playback to finish...");
 			Thread.sleep(PAUSE_MS + 3000);
@@ -141,7 +147,8 @@ public final class MacroManualCheck {
 		}
 	}
 
-	private static void checkEntry(String label, MacroCodec.Entry entry, int expectedCommandId, byte[] expectedPayload) {
+	private static void checkEntry(String label, MacroCodec.Entry entry, int expectedCommandId,
+			byte[] expectedPayload) {
 		boolean ok = entry.commandId == expectedCommandId && Arrays.equals(entry.payload, expectedPayload);
 		check(label, ok);
 	}

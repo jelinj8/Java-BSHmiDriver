@@ -16,14 +16,16 @@ import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of DRAW_IMAGE (doc/PROTOCOL.md §12.7) and the {@code .epi}
- * format ({@code EpiImageCodec}): draws a striped background, encodes a small rounded-square
- * "badge" icon (a filled black circle on a white rounded-rect, with fully transparent corners
- * outside the rounding) as a {@code .epi} file with a transparency mask, uploads it to
- * VOLUME=INTERNAL via FILE_UPLOAD, then DRAW_IMAGEs it on top of the stripes - the badge's four
- * corners should show the stripes showing through (mask working, not just "happens to look white
- * already"), while the rest of the badge fully replaces the stripes underneath it. NOT part of the
- * automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of DRAW_IMAGE (doc/PROTOCOL.md §12.7) and
+ * the {@code .epi} format ({@code EpiImageCodec}): draws a striped background,
+ * encodes a small rounded-square "badge" icon (a filled black circle on a white
+ * rounded-rect, with fully transparent corners outside the rounding) as a
+ * {@code .epi} file with a transparency mask, uploads it to VOLUME=INTERNAL via
+ * FILE_UPLOAD, then DRAW_IMAGEs it on top of the stripes - the badge's four
+ * corners should show the stripes showing through (mask working, not just
+ * "happens to look white already"), while the rest of the badge fully replaces
+ * the stripes underneath it. NOT part of the automated {@code mvn test} suite -
+ * run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -136,8 +138,8 @@ public final class DrawImageManualCheck {
 
 	private static void upload(CommandClient client, String path, byte[] content) throws Exception {
 		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.INTERNAL);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

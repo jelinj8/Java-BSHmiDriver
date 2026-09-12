@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Minimal in-memory {@link FrameTransport} test double for {@link CommandClientTest} - no real
- * I/O. {@code send()} synchronously invokes the installed responder and, if it returns non-null,
- * delivers that frame to the listener before returning - since {@link CommandClient} sets up its
- * pending-response state before calling {@code transport.send()}, this deterministically exercises
- * the same code path a real async transport would, without any test-thread timing.
+ * Minimal in-memory {@link FrameTransport} test double for
+ * {@link CommandClientTest} - no real I/O. {@code send()} synchronously invokes
+ * the installed responder and, if it returns non-null, delivers that frame to
+ * the listener before returning - since {@link CommandClient} sets up its
+ * pending-response state before calling {@code transport.send()}, this
+ * deterministically exercises the same code path a real async transport would,
+ * without any test-thread timing.
  */
 final class FakeFrameTransport implements FrameTransport {
 
@@ -22,12 +24,18 @@ final class FakeFrameTransport implements FrameTransport {
 		return sent;
 	}
 
-	/** Installs a function computing the (possibly null, meaning "no response") reply to each sent request. */
+	/**
+	 * Installs a function computing the (possibly null, meaning "no response")
+	 * reply to each sent request.
+	 */
 	void setResponder(Function<Frame, Frame> responder) {
 		this.responder = responder;
 	}
 
-	/** Delivers a frame to the installed listener without it being a response to any send() - simulates a device-pushed event. */
+	/**
+	 * Delivers a frame to the installed listener without it being a response to any
+	 * send() - simulates a device-pushed event.
+	 */
 	void pushUnsolicited(Frame frame) {
 		if (listener != null) {
 			listener.onFrame(frame);

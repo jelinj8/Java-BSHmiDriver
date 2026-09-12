@@ -19,15 +19,17 @@ import cz.bliksoft.hmieink.protocol.TextBackground;
 import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of DRAW_TEXT's FLAGS.TEXT_IS_PATH (doc/PROTOCOL.md §12.6) -
- * the whole point of the feature: a single saved macro that draws different text on different
- * plays, purely because a VOLUME=PSRAM file it reads from changed in between, with the macro file
- * itself never re-recorded or touched. Sequence: write "HELLO" to a PSRAM file, record a macro
- * containing one DRAW_TEXT with TEXT_IS_PATH set (referencing that file), save it, confirm (via
- * {@code MacroCodec}) the saved macro captured the *path*, not the resolved text, then play it
- * (expect "HELLO" on the panel), overwrite the PSRAM file with "WORLD", and play the exact same
- * saved macro again (expect "WORLD" this time). NOT part of the automated {@code mvn test} suite -
- * run it directly:
+ * Manual, real-hardware verification of DRAW_TEXT's FLAGS.TEXT_IS_PATH
+ * (doc/PROTOCOL.md §12.6) - the whole point of the feature: a single saved
+ * macro that draws different text on different plays, purely because a
+ * VOLUME=PSRAM file it reads from changed in between, with the macro file
+ * itself never re-recorded or touched. Sequence: write "HELLO" to a PSRAM file,
+ * record a macro containing one DRAW_TEXT with TEXT_IS_PATH set (referencing
+ * that file), save it, confirm (via {@code MacroCodec}) the saved macro
+ * captured the *path*, not the resolved text, then play it (expect "HELLO" on
+ * the panel), overwrite the PSRAM file with "WORLD", and play the exact same
+ * saved macro again (expect "WORLD" this time). NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -120,7 +122,10 @@ public final class ParametrizedMacroManualCheck {
 		}
 	}
 
-	/** Parses a captured DRAW_TEXT payload (doc/PROTOCOL.md §12.6's 15-byte header) and returns its TEXT as a String. */
+	/**
+	 * Parses a captured DRAW_TEXT payload (doc/PROTOCOL.md §12.6's 15-byte header)
+	 * and returns its TEXT as a String.
+	 */
 	private static String extractDrawTextString(byte[] drawTextPayload) {
 		int textLen = (drawTextPayload[13] & 0xFF) | ((drawTextPayload[14] & 0xFF) << 8);
 		return new String(drawTextPayload, 15, textLen, StandardCharsets.UTF_8);
@@ -147,8 +152,8 @@ public final class ParametrizedMacroManualCheck {
 	private static void uploadLabel(CommandClient client, String text) throws Exception {
 		byte[] content = text.getBytes(StandardCharsets.UTF_8);
 		byte[] pathBytes = LABEL_PATH.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload =
-				ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
+				.order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) Volume.PSRAM);
 		payload.put((byte) pathBytes.length);
 		payload.put(pathBytes);

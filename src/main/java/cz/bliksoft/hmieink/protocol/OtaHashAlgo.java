@@ -1,6 +1,9 @@
 package cz.bliksoft.hmieink.protocol;
 
-/** {@code OTA_INSTALL.HASH_ALGO} (doc/PROTOCOL.md §16.1). Mirrors firmware's {@code Protocol.h} {@code otaHashAlgo} namespace. */
+/**
+ * {@code OTA_INSTALL.HASH_ALGO} (doc/PROTOCOL.md §16.1). Mirrors firmware's
+ * {@code Protocol.h} {@code otaHashAlgo} namespace.
+ */
 public final class OtaHashAlgo {
 
 	private OtaHashAlgo() {
@@ -13,12 +16,12 @@ public final class OtaHashAlgo {
 	/** HASH_LEN in bytes for a given HASH_ALGO (0 for NONE). */
 	public static int hashLenFor(int hashAlgo) {
 		switch (hashAlgo) {
-			case SHA256:
-				return 32;
-			case MD5:
-				return 16;
-			default:
-				return 0;
+		case SHA256:
+			return 32;
+		case MD5:
+			return 16;
+		default:
+			return 0;
 		}
 	}
 }

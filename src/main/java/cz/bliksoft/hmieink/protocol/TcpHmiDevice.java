@@ -1,6 +1,9 @@
 package cz.bliksoft.hmieink.protocol;
 
-/** {@link HmiDevice} over {@link TcpFrameTransport} (doc/PROTOCOL.md §3.2). No {@code provided} dependency. */
+/**
+ * {@link HmiDevice} over {@link TcpFrameTransport} (doc/PROTOCOL.md §3.2). No
+ * {@code provided} dependency.
+ */
 public final class TcpHmiDevice extends HmiDevice {
 
 	public TcpHmiDevice(String host, int port) {

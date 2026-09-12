@@ -12,16 +12,17 @@ import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 
 /**
- * Manual, real-hardware verification of BUTTON_EVENT (doc/PROTOCOL.md §11) - the board's six
- * observable physical buttons (Menu, Back, the dial switch's Up/Down/Confirm, and BOOT - safe to
- * read as an ordinary button once running, since it's only sampled as a strap pin at reset; RESET
- * itself is excluded since pressing it resets the whole MCU, so firmware can never observe it).
- * Unlike every other manual
- * check, there's nothing to send: this just opens a capture window, asks the user to press each
- * button (plus one long-press), and reports exactly what BUTTON_ID/EVENT_TYPE/TIMESTAMP_MS
- * sequence arrived via {@code CommandEventListener} - the same unsolicited-push path
- * {@code GpioManualCheck} exercised for GPIO_EVENT. NOT part of the automated {@code mvn test}
- * suite - run it directly:
+ * Manual, real-hardware verification of BUTTON_EVENT (doc/PROTOCOL.md §11) -
+ * the board's six observable physical buttons (Menu, Back, the dial switch's
+ * Up/Down/Confirm, and BOOT - safe to read as an ordinary button once running,
+ * since it's only sampled as a strap pin at reset; RESET itself is excluded
+ * since pressing it resets the whole MCU, so firmware can never observe it).
+ * Unlike every other manual check, there's nothing to send: this just opens a
+ * capture window, asks the user to press each button (plus one long-press), and
+ * reports exactly what BUTTON_ID/EVENT_TYPE/TIMESTAMP_MS sequence arrived via
+ * {@code CommandEventListener} - the same unsolicited-push path
+ * {@code GpioManualCheck} exercised for GPIO_EVENT. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -94,8 +95,8 @@ public final class ButtonManualCheck {
 			for (Map.Entry<Integer, String> b : BUTTON_NAMES.entrySet()) {
 				int presses = pressCounts.getOrDefault(b.getKey(), 0);
 				int longPresses = longPressCounts.getOrDefault(b.getKey(), 0);
-				System.out.println("   " + b.getValue() + ": " + presses + " press(es), " + longPresses
-						+ " long-press(es)");
+				System.out.println(
+						"   " + b.getValue() + ": " + presses + " press(es), " + longPresses + " long-press(es)");
 			}
 
 			int distinctButtonsPressed = pressCounts.size();

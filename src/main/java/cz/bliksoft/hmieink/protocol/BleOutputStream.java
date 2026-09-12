@@ -9,10 +9,11 @@ import cz.bliksoft.javautils.ble.BlePeripheral;
 
 /**
  * Fragments writes into at-most-{@code maxChunkSize} pieces, each sent as one
- * {@code writeCharacteristic(..., withResponse=true)} call (doc/PROTOCOL.md §3.1) - `BSToolbox-BLE`
- * has no stream abstraction or auto-fragmentation of its own, so this is what gives
- * {@link BleFrameTransport} the same "just a byte stream" shape {@link AbstractStreamFrameTransport}
- * expects (matching TCP/Serial).
+ * {@code writeCharacteristic(..., withResponse=true)} call (doc/PROTOCOL.md
+ * §3.1) - `BSToolbox-BLE` has no stream abstraction or auto-fragmentation of
+ * its own, so this is what gives {@link BleFrameTransport} the same "just a
+ * byte stream" shape {@link AbstractStreamFrameTransport} expects (matching
+ * TCP/Serial).
  */
 final class BleOutputStream extends OutputStream {
 
@@ -28,14 +29,17 @@ final class BleOutputStream extends OutputStream {
 		this.maxChunkSize = initialMaxChunkSize;
 	}
 
-	/** Call once the real value is known from the handshake's MAX_CHUNK_SIZE capability (doc/PROTOCOL.md §5.2). */
+	/**
+	 * Call once the real value is known from the handshake's MAX_CHUNK_SIZE
+	 * capability (doc/PROTOCOL.md §5.2).
+	 */
 	void setMaxChunkSize(int maxChunkSize) {
 		this.maxChunkSize = maxChunkSize;
 	}
 
 	@Override
 	public void write(int b) throws IOException {
-		write(new byte[] {(byte) b}, 0, 1);
+		write(new byte[] { (byte) b }, 0, 1);
 	}
 
 	@Override

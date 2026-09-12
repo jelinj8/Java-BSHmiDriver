@@ -1,6 +1,9 @@
 package cz.bliksoft.hmieink.protocol;
 
-/** {@code GPIO_PLAY_PATTERN.FLAGS} bits (doc/PROTOCOL.md §15.5). Mirrors firmware's {@code Protocol.h} {@code gpioPatternFlags} namespace. */
+/**
+ * {@code GPIO_PLAY_PATTERN.FLAGS} bits (doc/PROTOCOL.md §15.5). Mirrors
+ * firmware's {@code Protocol.h} {@code gpioPatternFlags} namespace.
+ */
 public final class GpioPatternFlags {
 
 	private GpioPatternFlags() {

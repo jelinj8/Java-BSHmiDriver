@@ -12,14 +12,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Records, per relative path, the SHA-256 hash a file held as of the last successful {@link
- * FolderSync#sync} run - the only way {@link SyncMode#MERGE} can tell "unchanged since last sync"
- * apart from "changed on this side" without any device-side timestamp support (doc/PROTOCOL.md
- * §14.1's FILE_LIST_RESPONSE carries only NAME/ENTRY_TYPE/SIZE). Stored as a plain
- * {@code sha256sum}-style text file - one {@code <64 hex chars>  <relative/path>} line per entry,
- * sorted by path for a stable, diffable, mergeable-by-a-human file - deliberately not a binary or
- * JSON format, since this project has no JSON dependency and the format is simple enough not to
- * need one.
+ * Records, per relative path, the SHA-256 hash a file held as of the last
+ * successful {@link FolderSync#sync} run - the only way {@link SyncMode#MERGE}
+ * can tell "unchanged since last sync" apart from "changed on this side"
+ * without any device-side timestamp support (doc/PROTOCOL.md §14.1's
+ * FILE_LIST_RESPONSE carries only NAME/ENTRY_TYPE/SIZE). Stored as a plain
+ * {@code sha256sum}-style text file - one
+ * {@code <64 hex chars>  <relative/path>} line per entry, sorted by path for a
+ * stable, diffable, mergeable-by-a-human file - deliberately not a binary or
+ * JSON format, since this project has no JSON dependency and the format is
+ * simple enough not to need one.
  */
 final class SyncManifest {
 
@@ -82,8 +84,10 @@ final class SyncManifest {
 			}
 			return sb.toString();
 		} catch (NoSuchAlgorithmException e) {
-			// SHA-256 is a JDK-mandatory algorithm (every conforming JVM provides it) - this can't
-			// actually happen, but MessageDigest.getInstance's checked exception forces a handler.
+			// SHA-256 is a JDK-mandatory algorithm (every conforming JVM provides it) -
+			// this can't
+			// actually happen, but MessageDigest.getInstance's checked exception forces a
+			// handler.
 			throw new IllegalStateException("SHA-256 unavailable", e);
 		}
 	}

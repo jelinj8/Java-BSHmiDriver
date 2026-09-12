@@ -20,31 +20,40 @@ import cz.bliksoft.hmieink.protocol.schema.FieldSpec;
 import cz.bliksoft.hmieink.protocol.schema.PayloadCodec;
 
 /**
- * The plaintext one-line command notation: {@code NAME<sep>field1<sep>field2<sep>...}, driven
- * entirely by {@link CommandSchema} so it never drifts from the typed wire layout. Default
- * separator is {@code |}; the CLI's {@code -s} lets a caller pick a different one when a field's
- * own text needs to contain a literal {@code |}.
+ * The plaintext one-line command notation:
+ * {@code NAME<sep>field1<sep>field2<sep>...}, driven entirely by
+ * {@link CommandSchema} so it never drifts from the typed wire layout. Default
+ * separator is {@code |}; the CLI's {@code -s} lets a caller pick a different
+ * one when a field's own text needs to contain a literal {@code |}.
  *
  * <p>
- * String-valued tokens support backslash escapes: {@code \n}, {@code \t}, {@code \\}, {@code
- * \<separator>}, and {@code \\uXXXX} (a 4-hex-digit Unicode code unit) - this is what lets a single
- * shell-line {@code -c} argument carry a newline/tab/arbitrary Unicode character. A {@code BYTES}
- * field's token is either escaped text (UTF-8 encoded) or {@code @<local file path>} to read raw
- * bytes from a file (used for image/OTA/upload payloads - RLE-compressed transfers are out of
- * scope here, see {@link PayloadCodec}'s class doc). Enum-valued fields accept the symbolic
- * constant name (case-insensitive) or a raw integer (decimal, or {@code 0x}-prefixed hex); a
- * bitmask field ({@link FieldSpec#isBitmask}) accepts one or more names joined by {@code +} (not
- * {@code |}, so it keeps working under any {@code -s} separator).
+ * String-valued tokens support backslash escapes: {@code \n}, {@code \t},
+ * {@code \\}, {@code
+ * \<separator>}, and {@code \\uXXXX} (a 4-hex-digit Unicode code unit) - this
+ * is what lets a single shell-line {@code -c} argument carry a
+ * newline/tab/arbitrary Unicode character. A {@code BYTES} field's token is
+ * either escaped text (UTF-8 encoded) or {@code @<local file path>} to read raw
+ * bytes from a file (used for image/OTA/upload payloads - RLE-compressed
+ * transfers are out of scope here, see {@link PayloadCodec}'s class doc).
+ * Enum-valued fields accept the symbolic constant name (case-insensitive) or a
+ * raw integer (decimal, or {@code 0x}-prefixed hex); a bitmask field
+ * ({@link FieldSpec#isBitmask}) accepts one or more names joined by {@code +}
+ * (not {@code |}, so it keeps working under any {@code -s} separator).
  *
  * <p>
- * {@link #format} always renders every field, including {@link FieldSpec#derived} ones (e.g. a
- * length/count prefix) - {@link #parse} never requires them as input, but seeing them in output
- * keeps a decoded frame's text fully self-describing (the point of "translate frames back to text
- * representation", e.g. for reading back a downloaded {@code .macro} recording).
+ * {@link #format} always renders every field, including
+ * {@link FieldSpec#derived} ones (e.g. a length/count prefix) - {@link #parse}
+ * never requires them as input, but seeing them in output keeps a decoded
+ * frame's text fully self-describing (the point of "translate frames back to
+ * text representation", e.g. for reading back a downloaded {@code .macro}
+ * recording).
  */
 public final class TextCommandFormat {
 
-	/** The result of {@link #parse}: a command ready to hand to {@code CommandClient#send}. */
+	/**
+	 * The result of {@link #parse}: a command ready to hand to
+	 * {@code CommandClient#send}.
+	 */
 	public static final class ParsedCommand {
 		public final int commandId;
 		public final byte[] payload;
@@ -89,15 +98,14 @@ public final class TextCommandFormat {
 				continue;
 			}
 			if (tokenIndex >= tokens.size()) {
-				throw new IllegalArgumentException(
-						spec.name + ": missing value for field '" + f.name + "'");
+				throw new IllegalArgumentException(spec.name + ": missing value for field '" + f.name + "'");
 			}
 			String token = tokens.get(tokenIndex++);
 			fields.put(f.name, parseFieldValue(token, f));
 		}
 		if (tokenIndex != tokens.size()) {
-			throw new IllegalArgumentException(
-					spec.name + ": too many fields (expected " + (tokenIndex - 1) + ", got " + (tokens.size() - 1) + ")");
+			throw new IllegalArgumentException(spec.name + ": too many fields (expected " + (tokenIndex - 1) + ", got "
+					+ (tokens.size() - 1) + ")");
 		}
 		byte[] payload = PayloadCodec.encode(spec, fields);
 		return new ParsedCommand(spec.commandId, payload);
@@ -118,21 +126,21 @@ public final class TextCommandFormat {
 
 	private static Object parseFieldValue(String token, FieldSpec f) {
 		switch (f.kind) {
-			case U8:
-			case U16LE:
-			case S16LE:
-			case U32LE:
-				return parseIntToken(token, f);
-			case IPV4:
-				return parseIpv4(token);
-			case MAC6:
-				return parseMac6(token);
-			case STRING:
-				return token; // already fully unescaped by tokenize()
-			case BYTES:
-				return parseBytesToken(token);
-			default:
-				throw new IllegalArgumentException("field '" + f.name + "' cannot be parsed from a single token");
+		case U8:
+		case U16LE:
+		case S16LE:
+		case U32LE:
+			return parseIntToken(token, f);
+		case IPV4:
+			return parseIpv4(token);
+		case MAC6:
+			return parseMac6(token);
+		case STRING:
+			return token; // already fully unescaped by tokenize()
+		case BYTES:
+			return parseBytesToken(token);
+		default:
+			throw new IllegalArgumentException("field '" + f.name + "' cannot be parsed from a single token");
 		}
 	}
 
@@ -141,7 +149,8 @@ public final class TextCommandFormat {
 			try {
 				return Files.readAllBytes(Paths.get(token.substring(1)));
 			} catch (IOException e) {
-				throw new IllegalArgumentException("cannot read file '" + token.substring(1) + "': " + e.getMessage(), e);
+				throw new IllegalArgumentException("cannot read file '" + token.substring(1) + "': " + e.getMessage(),
+						e);
 			}
 		}
 		return token.getBytes(StandardCharsets.UTF_8);
@@ -240,48 +249,48 @@ public final class TextCommandFormat {
 	private static void appendField(StringBuilder sb, char separator, FieldSpec f, Object value) {
 		sb.append(separator);
 		switch (f.kind) {
-			case U8:
-			case U16LE:
-			case S16LE:
-			case U32LE:
-				sb.append(formatIntValue((Long) value, f));
-				return;
-			case IPV4: {
-				byte[] b = (byte[]) value;
-				sb.append(b[0] & 0xFF).append('.').append(b[1] & 0xFF).append('.').append(b[2] & 0xFF).append('.')
-						.append(b[3] & 0xFF);
-				return;
+		case U8:
+		case U16LE:
+		case S16LE:
+		case U32LE:
+			sb.append(formatIntValue((Long) value, f));
+			return;
+		case IPV4: {
+			byte[] b = (byte[]) value;
+			sb.append(b[0] & 0xFF).append('.').append(b[1] & 0xFF).append('.').append(b[2] & 0xFF).append('.')
+					.append(b[3] & 0xFF);
+			return;
+		}
+		case MAC6: {
+			byte[] b = (byte[]) value;
+			for (int i = 0; i < 6; i++) {
+				if (i > 0) {
+					sb.append(':');
+				}
+				sb.append(String.format("%02X", b[i] & 0xFF));
 			}
-			case MAC6: {
-				byte[] b = (byte[]) value;
-				for (int i = 0; i < 6; i++) {
-					if (i > 0) {
-						sb.append(':');
-					}
-					sb.append(String.format("%02X", b[i] & 0xFF));
-				}
-				return;
+			return;
+		}
+		case STRING:
+			sb.append(escape((String) value, separator));
+			return;
+		case BYTES:
+			sb.append(formatBytesValue((byte[]) value, separator));
+			return;
+		case REPEATED_STRING_TAIL:
+			for (String s : (List<String>) value) {
+				sb.append(escape(s, separator)).append(separator);
 			}
-			case STRING:
-				sb.append(escape((String) value, separator));
-				return;
-			case BYTES:
-				sb.append(formatBytesValue((byte[]) value, separator));
-				return;
-			case REPEATED_STRING_TAIL:
-				for (String s : (List<String>) value) {
-					sb.append(escape(s, separator)).append(separator);
-				}
-				sb.setLength(sb.length() - 1); // drop the trailing separator this loop over-appended
-				return;
-			case REPEATED_U16LE_TAIL:
-				for (Long v : (List<Long>) value) {
-					sb.append(v).append(separator);
-				}
-				sb.setLength(sb.length() - 1);
-				return;
-			default:
-				throw new IllegalStateException("unhandled field kind " + f.kind);
+			sb.setLength(sb.length() - 1); // drop the trailing separator this loop over-appended
+			return;
+		case REPEATED_U16LE_TAIL:
+			for (Long v : (List<Long>) value) {
+				sb.append(v).append(separator);
+			}
+			sb.setLength(sb.length() - 1);
+			return;
+		default:
+			throw new IllegalStateException("unhandled field kind " + f.kind);
 		}
 	}
 
@@ -377,18 +386,22 @@ public final class TextCommandFormat {
 	// --- escaping / tokenizing ---
 
 	/**
-	 * Splits one command line into separator-delimited, fully-unescaped tokens - exposed publicly
-	 * (beyond {@link #parse}'s own use) so other line-oriented consumers of this same grammar (e.g.
-	 * {@code ScriptRunner}'s PC-local pseudo-commands) can reuse the exact same escaping rules
-	 * rather than re-implementing a slightly different one.
+	 * Splits one command line into separator-delimited, fully-unescaped tokens -
+	 * exposed publicly (beyond {@link #parse}'s own use) so other line-oriented
+	 * consumers of this same grammar (e.g. {@code ScriptRunner}'s PC-local
+	 * pseudo-commands) can reuse the exact same escaping rules rather than
+	 * re-implementing a slightly different one.
 	 */
 	public static List<String> tokenize(String line, char separator) {
 		List<String> tokens = new ArrayList<>();
 		StringBuilder cur = new StringBuilder();
 		int i = 0;
-		// A token starting with '@' (the "read a local file" convention, see BYTES fields) is
-		// taken verbatim, with no escape processing at all - only the next literal separator ends
-		// it. Otherwise an ordinary Windows path (backslashes throughout) would collide with this
+		// A token starting with '@' (the "read a local file" convention, see BYTES
+		// fields) is
+		// taken verbatim, with no escape processing at all - only the next literal
+		// separator ends
+		// it. Otherwise an ordinary Windows path (backslashes throughout) would collide
+		// with this
 		// same escape syntax (e.g. "\Users" parsed as an unrecognized \U escape).
 		boolean rawMode = !line.isEmpty() && line.charAt(0) == '@';
 		while (i < line.length()) {
@@ -430,7 +443,10 @@ public final class TextCommandFormat {
 		return tokens;
 	}
 
-	/** Inverse of {@link #tokenize} for one field's text - see that method's doc for why this is public. */
+	/**
+	 * Inverse of {@link #tokenize} for one field's text - see that method's doc for
+	 * why this is public.
+	 */
 	public static String escape(String s, char separator) {
 		StringBuilder sb = new StringBuilder(s.length());
 		for (int i = 0; i < s.length(); i++) {

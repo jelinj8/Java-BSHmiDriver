@@ -18,10 +18,14 @@ class BdfFontTest {
 	@TempDir
 	Path tempDir;
 
-	// FONT_ASCENT=6, FONT_DESCENT=2 -> cellHeight=8. 'A' (0x41): BBX 4 6 0 0 (no descender, occupies
-	// the ascent zone only, canvas rows 0-5) with its own top 2 rows deliberately blank, to exercise
-	// top-trimming. '?' (0x3F, DEFAULT_CHAR): BBX 4 8 0 -2 (a "descender" reaching 2 rows below the
-	// baseline, canvas rows 0-7 = the whole cell) with ink in its own top row, to exercise the
+	// FONT_ASCENT=6, FONT_DESCENT=2 -> cellHeight=8. 'A' (0x41): BBX 4 6 0 0 (no
+	// descender, occupies
+	// the ascent zone only, canvas rows 0-5) with its own top 2 rows deliberately
+	// blank, to exercise
+	// top-trimming. '?' (0x3F, DEFAULT_CHAR): BBX 4 8 0 -2 (a "descender" reaching
+	// 2 rows below the
+	// baseline, canvas rows 0-7 = the whole cell) with ink in its own top row, to
+	// exercise the
 	// untrimmed-fallback path.
 	private static final String SYNTHETIC_BDF = "STARTFONT 2.1\n" + "FONT test\n" + "SIZE 8 75 75\n"
 			+ "FONTBOUNDINGBOX 4 8 0 -2\n" + "STARTPROPERTIES 2\n" + "FONT_ASCENT 6\n" + "FONT_DESCENT 2\n"
@@ -61,8 +65,10 @@ class BdfFontTest {
 	@Test
 	void trimmedGlyphSkipsOnlyBlankTopRows() throws IOException {
 		BdfFont font = load();
-		// 'A': cellHeight=8, its own bitmap occupies canvas rows 0-5 (BBX yoff=0,bbh=6 -> top row =
-		// ascent(6)-(0+6)=0), with its own first 2 rows blank -> first real ink at canvas row 2.
+		// 'A': cellHeight=8, its own bitmap occupies canvas rows 0-5 (BBX yoff=0,bbh=6
+		// -> top row =
+		// ascent(6)-(0+6)=0), with its own first 2 rows blank -> first real ink at
+		// canvas row 2.
 		RasterGlyph glyph = font.renderGlyph('A', 0, true);
 		assertEquals(4, glyph.width);
 		assertEquals(6, glyph.height); // cellHeight(8) - topInkRow(2)

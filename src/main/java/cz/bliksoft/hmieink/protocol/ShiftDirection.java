@@ -1,8 +1,8 @@
 package cz.bliksoft.hmieink.protocol;
 
 /**
- * SHIFT_REGION's DIRECTION byte (doc/PROTOCOL.md §12.9). Mirrors firmware's {@code Protocol.h}
- * {@code shiftDirection} namespace - keep both in sync.
+ * SHIFT_REGION's DIRECTION byte (doc/PROTOCOL.md §12.9). Mirrors firmware's
+ * {@code Protocol.h} {@code shiftDirection} namespace - keep both in sync.
  */
 public final class ShiftDirection {
 

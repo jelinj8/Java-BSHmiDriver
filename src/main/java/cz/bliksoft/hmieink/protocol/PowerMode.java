@@ -1,6 +1,9 @@
 package cz.bliksoft.hmieink.protocol;
 
-/** {@code SET_POWER_MODE.MODE} values (doc/PROTOCOL.md §17.1). Mirrors firmware's {@code Protocol.h} {@code powerMode} namespace. */
+/**
+ * {@code SET_POWER_MODE.MODE} values (doc/PROTOCOL.md §17.1). Mirrors
+ * firmware's {@code Protocol.h} {@code powerMode} namespace.
+ */
 public final class PowerMode {
 
 	private PowerMode() {

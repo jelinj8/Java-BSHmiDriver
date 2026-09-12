@@ -16,12 +16,13 @@ import cz.bliksoft.hmieink.protocol.TextBackground;
 
 /**
  * Manual, real-hardware verification of DRAW_TEXT's CP437 box-drawing support
- * (doc/PROTOCOL.md §12.6, {@code EmbeddedFont.h}'s {@code kBoxDrawingGlyphs}): draws a small
- * 2x2 ASCII-art table using real Unicode box-drawing characters (corners, tees, cross), sent as a
- * single pre-formatted multi-line DRAW_TEXT (WIDTH=0, embedded '\n' between rows) - proving both
- * the box-drawing glyph mapping and that fixed internal spacing survives untouched (WIDTH=0 never
- * word-wraps, so the table's alignment isn't disturbed). NOT part of the automated
- * {@code mvn test} suite - run it directly:
+ * (doc/PROTOCOL.md §12.6, {@code EmbeddedFont.h}'s {@code kBoxDrawingGlyphs}):
+ * draws a small 2x2 ASCII-art table using real Unicode box-drawing characters
+ * (corners, tees, cross), sent as a single pre-formatted multi-line DRAW_TEXT
+ * (WIDTH=0, embedded '\n' between rows) - proving both the box-drawing glyph
+ * mapping and that fixed internal spacing survives untouched (WIDTH=0 never
+ * word-wraps, so the table's alignment isn't disturbed). NOT part of the
+ * automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -41,12 +42,7 @@ public final class BoxDrawingManualCheck {
 		String portDescriptor = args[0];
 
 		// clang-format off
-		String table =
-				"┌─────┬─────┐\n"
-				+ "│  A  │  B  │\n"
-				+ "├─────┼─────┤\n"
-				+ "│  C  │  D  │\n"
-				+ "└─────┴─────┘";
+		String table = "┌─────┬─────┐\n" + "│  A  │  B  │\n" + "├─────┼─────┤\n" + "│  C  │  D  │\n" + "└─────┴─────┘";
 		// clang-format on
 
 		CommandClient client = new CommandClient(new SerialFrameTransport(portDescriptor));

@@ -15,12 +15,14 @@ import cz.bliksoft.hmieink.protocol.TextAlign;
 import cz.bliksoft.hmieink.protocol.TextBackground;
 
 /**
- * Manual, real-hardware verification of SET_DRAW_OFFSET (doc/PROTOCOL.md §12.13): draws the same
- * filled rectangle three times at the exact same wire coordinates, changing only the persistent
- * draw offset in between - confirming it pans every subsequent write, including one large enough
- * negative offset to straddle the left panel edge (only the surviving right portion should be
- * visible, flush against x=0) - then resets the offset and confirms normal drawing resumes. NOT
- * part of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of SET_DRAW_OFFSET (doc/PROTOCOL.md
+ * §12.13): draws the same filled rectangle three times at the exact same wire
+ * coordinates, changing only the persistent draw offset in between - confirming
+ * it pans every subsequent write, including one large enough negative offset to
+ * straddle the left panel edge (only the surviving right portion should be
+ * visible, flush against x=0) - then resets the offset and confirms normal
+ * drawing resumes. NOT part of the automated {@code mvn test} suite - run it
+ * directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \

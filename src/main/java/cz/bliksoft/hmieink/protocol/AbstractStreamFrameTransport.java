@@ -5,9 +5,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Shared implementation for the two byte-stream transports (TCP, Serial - doc/PROTOCOL.md
- * §3.2/§3.3): once a subclass hands over an {@link InputStream}/{@link OutputStream} pair via
- * {@link #beginReading}, this runs the background reader loop, dispatches frames to the current
+ * Shared implementation for the two byte-stream transports (TCP, Serial -
+ * doc/PROTOCOL.md §3.2/§3.3): once a subclass hands over an
+ * {@link InputStream}/{@link OutputStream} pair via {@link #beginReading}, this
+ * runs the background reader loop, dispatches frames to the current
  * {@link FrameListener}, and serializes concurrent {@link #send}s.
  */
 abstract class AbstractStreamFrameTransport implements FrameTransport {
@@ -54,9 +55,10 @@ abstract class AbstractStreamFrameTransport implements FrameTransport {
 	}
 
 	/**
-	 * Writes raw bytes directly to the stream, sharing the same lock as {@link #send(Frame)} so a
-	 * caller writing out-of-band bytes (e.g. {@code SerialFrameTransport}'s LOW_POWER wake preamble,
-	 * doc/PROTOCOL.md §17.1) can't interleave with a concurrent frame send.
+	 * Writes raw bytes directly to the stream, sharing the same lock as
+	 * {@link #send(Frame)} so a caller writing out-of-band bytes (e.g.
+	 * {@code SerialFrameTransport}'s LOW_POWER wake preamble, doc/PROTOCOL.md
+	 * §17.1) can't interleave with a concurrent frame send.
 	 */
 	protected final void sendRawBytes(byte[] data) throws IOException {
 		OutputStream o = out;
@@ -79,7 +81,10 @@ abstract class AbstractStreamFrameTransport implements FrameTransport {
 		return in != null;
 	}
 
-	/** Interrupts the reader thread and clears the stream references. Subclasses still own closing the underlying connection. */
+	/**
+	 * Interrupts the reader thread and clears the stream references. Subclasses
+	 * still own closing the underlying connection.
+	 */
 	protected final void stopReading() {
 		Thread t = readerThread;
 		if (t != null) {
