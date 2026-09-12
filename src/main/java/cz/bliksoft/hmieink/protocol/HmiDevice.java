@@ -113,12 +113,18 @@ public class HmiDevice implements Closeable {
 
 	/**
 	 * doc/PROTOCOL.md §5.3: {@code pinType} is {@link AuthLevel#USAGE} or
-	 * {@link AuthLevel#ADMIN}.
+	 * {@link AuthLevel#ADMIN}. Also applies the response's negotiated
+	 * {@code MAX_CHUNK_SIZE} capability (§5.2) to the transport via
+	 * {@link FrameTransport#setMaxChunkSize} - a no-op on transports that don't
+	 * have one (only {@code BleFrameTransport} does), so this stays
+	 * transport-agnostic like the rest of this class.
 	 */
 	public HandshakeCapabilities handshake(int pinType, String pin) throws IOException {
 		Frame response = send(CommandId.HANDSHAKE_REQUEST,
 				fields("PIN_TYPE", (long) pinType, "PIN", pin != null ? pin : ""));
-		return HandshakeCapabilities.parse(response.getPayload());
+		HandshakeCapabilities capabilities = HandshakeCapabilities.parse(response.getPayload());
+		commandClient.getTransport().setMaxChunkSize(capabilities.getMaxChunkSize());
+		return capabilities;
 	}
 
 	public void logMessage(byte[] marker) throws IOException {

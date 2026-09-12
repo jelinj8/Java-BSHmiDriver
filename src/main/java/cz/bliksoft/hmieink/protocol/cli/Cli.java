@@ -7,11 +7,8 @@ import java.util.Locale;
 
 import cz.bliksoft.hmieink.protocol.AuthLevel;
 import cz.bliksoft.hmieink.protocol.Ble;
-import cz.bliksoft.hmieink.protocol.BleFrameTransport;
 import cz.bliksoft.hmieink.protocol.BleHmiDevice;
 import cz.bliksoft.hmieink.protocol.FileHmiDevice;
-import cz.bliksoft.hmieink.protocol.FrameTransport;
-import cz.bliksoft.hmieink.protocol.HandshakeCapabilities;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
 import cz.bliksoft.hmieink.protocol.IconSpecCache;
 import cz.bliksoft.hmieink.protocol.SerialHmiDevice;
@@ -224,28 +221,17 @@ public final class Cli {
 	 * {@code -k}/{@code -K} if given, else none - since without a real
 	 * HANDSHAKE_REQUEST the new pin flags would have no effect at all
 	 * (doc/PROTOCOL.md §5.3: a connection starts at AuthLevel.NONE until it does).
-	 * Also applies the handshake's negotiated {@code MAX_CHUNK_SIZE} (§5.2) to a
-	 * BLE transport - without this, {@link BleFrameTransport} stays at
-	 * {@link Ble#DEFAULT_MAX_CHUNK_SIZE} (20 bytes) for the whole session, which is
-	 * dramatically slower than the device's real negotiated ATT MTU allows
-	 * (confirmed on real hardware: a multi-hundred-KB transfer at the 20-byte
-	 * default measured well under 200 bytes/sec).
+	 * {@link HmiDevice#handshake(int, String)} itself applies the negotiated
+	 * {@code MAX_CHUNK_SIZE} (§5.2) to the transport, so there's nothing
+	 * BLE-specific left to do here.
 	 */
 	private static void handshake(HmiDevice device, Options opts) throws IOException {
-		HandshakeCapabilities capabilities;
 		if (opts.adminPin != null) {
-			capabilities = device.handshake(AuthLevel.ADMIN, opts.adminPin);
+			device.handshake(AuthLevel.ADMIN, opts.adminPin);
 		} else if (opts.usagePin != null) {
-			capabilities = device.handshake(AuthLevel.USAGE, opts.usagePin);
+			device.handshake(AuthLevel.USAGE, opts.usagePin);
 		} else {
-			capabilities = device.handshake();
-		}
-		FrameTransport transport = device.getCommandClient().getTransport();
-		if (transport instanceof BleFrameTransport) {
-			int maxChunkSize = capabilities.getMaxChunkSize();
-			if (maxChunkSize > 0) {
-				((BleFrameTransport) transport).setMaxChunkSize(maxChunkSize);
-			}
+			device.handshake();
 		}
 	}
 

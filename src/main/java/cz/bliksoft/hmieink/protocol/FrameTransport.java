@@ -47,6 +47,18 @@ public interface FrameTransport extends Closeable {
 	default void setProgressListener(TransferProgressListener listener) {
 	}
 
+	/**
+	 * Applies a chunk size negotiated via {@code HANDSHAKE_RESPONSE}'s
+	 * {@code MAX_CHUNK_SIZE} capability (doc/PROTOCOL.md §5.2) to this transport,
+	 * if it has a chunk size to negotiate at all. Default no-op; only
+	 * {@code BleFrameTransport} currently has one (BLE's ATT MTU bounds how much
+	 * fits in one characteristic write - Serial/TCP have no equivalent limit).
+	 * {@code maxChunkSize <= 0} means "no limit reported" and should be ignored by
+	 * the implementation.
+	 */
+	default void setMaxChunkSize(int maxChunkSize) {
+	}
+
 	boolean isConnected();
 
 	/** Stops the reader and releases the underlying connection. Idempotent. */

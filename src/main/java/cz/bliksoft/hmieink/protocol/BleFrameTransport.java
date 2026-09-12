@@ -101,9 +101,15 @@ public final class BleFrameTransport extends AbstractStreamFrameTransport {
 	 * handshake's MAX_CHUNK_SIZE capability (doc/PROTOCOL.md §5.2) - not yet known
 	 * at {@link #connect()} time, since parsing the handshake TLV payload is a
 	 * layer above this transport. Until called, a conservative default
-	 * ({@link Ble#DEFAULT_MAX_CHUNK_SIZE}) is used.
+	 * ({@link Ble#DEFAULT_MAX_CHUNK_SIZE}) is used. {@code maxChunkSize <= 0} ("no
+	 * limit reported") is ignored, per {@link FrameTransport#setMaxChunkSize}'s
+	 * contract.
 	 */
+	@Override
 	public void setMaxChunkSize(int maxChunkSize) {
+		if (maxChunkSize <= 0) {
+			return;
+		}
 		BleOutputStream out = txStream;
 		if (out != null) {
 			out.setMaxChunkSize(maxChunkSize);
