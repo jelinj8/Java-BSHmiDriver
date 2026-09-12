@@ -50,7 +50,11 @@ public final class Cli {
 		String transport;
 
 		@CommandLine.Option(names = { "-a", "--address" }, required = true,
-				description = "host:port (tcp), COM port (serial), device address (ble), or output path (file)")
+				description = "host:port (tcp), COM port (serial), device address (ble), or output path (file). "
+						+ "For -t ble, -a may also be: 'scan' (list devices and exit), '*' (first device found), "
+						+ "'1' (the device if exactly one is found, else error), a name/address substring "
+						+ "(exactly one match required), or a comma-separated list of any of those "
+						+ "(script run against each, in order)")
 		String address;
 
 		@CommandLine.Option(names = { "-k", "--usage-pin" },
@@ -152,11 +156,26 @@ public final class Cli {
 			}
 			case "ble": {
 				try (BleAdapter adapter = new BleAdapter()) {
-					String resolvedAddress = scanForAddress(adapter, opts.address);
-					try (BleHmiDevice device = new BleHmiDevice(adapter, resolvedAddress)) {
-						device.connect();
-						handshake(device, opts);
-						processArgs(device, args);
+					List<BleDevice> found = scanForDevices(adapter);
+					if ("scan".equalsIgnoreCase(opts.address)) {
+						printScanResults(found);
+						return;
+					}
+					// One scan serves every device in the list; each connection reuses this same
+					// `adapter`, which BleFrameTransport requires (it must be the one that scanned).
+					for (String selector : opts.address.split(",")) {
+						String trimmed = selector.trim();
+						if (trimmed.isEmpty()) {
+							throw new IllegalArgumentException("empty device selector in -a: '" + opts.address + "'");
+						}
+						BleDevice target = resolveDevice(found, trimmed);
+						System.out.println("Connecting to " + target.address
+								+ (target.name != null ? " (" + target.name + ")" : "") + "...");
+						try (BleHmiDevice device = new BleHmiDevice(adapter, target.address)) {
+							device.connect();
+							handshake(device, opts);
+							processArgs(device, args);
+						}
 					}
 				}
 				return;
@@ -264,6 +283,98 @@ public final class Cli {
 				default:
 					throw new IllegalArgumentException("unrecognized argument: " + arg);
 			}
+		}
+	}
+
+	/**
+	 * A BLE device found during a scan.
+	 */
+	static final class BleDevice {
+		final String address;
+		final String name;
+		final Integer rssi;
+
+		BleDevice(String address, String name, Integer rssi) {
+			this.address = address;
+			this.name = name;
+			this.rssi = rssi;
+		}
+	}
+
+	/**
+	 * Scan for all BLE devices advertising the CrowPanel service UUID.
+	 */
+	private static List<BleDevice> scanForDevices(BleAdapter adapter) throws Exception {
+		List<BleDevice> found = new ArrayList<>();
+		adapter.scan(new ScanFilter().withServiceUuid(Ble.SERVICE_UUID), BLE_SCAN_TIMEOUT_MS, (address, name, rssi) -> {
+			found.add(new BleDevice(address, name, rssi));
+		});
+		return found;
+	}
+
+	/**
+	 * Print the scan results to stdout in a tabular format.
+	 */
+	private static void printScanResults(List<BleDevice> found) {
+		if (found.isEmpty()) {
+			System.out.println("No devices found.");
+			return;
+		}
+		System.out.printf("%-17s %s%n", "Address", "Name");
+		System.out.println("------------------- ------------------");
+		for (BleDevice device : found) {
+			System.out.printf("%-17s %s%n", device.address, device.name != null ? device.name : "(no name)");
+		}
+	}
+
+	/**
+	 * Resolve a device selector to an address.
+	 *
+	 * @param found the list of devices found during scan
+	 * @param selector the selector string from -a (e.g. "*", "1", "device name", "address")
+	 * @return the resolved device
+	 * @throws IOException if no match or ambiguous match is found
+	 */
+	public static BleDevice resolveDevice(List<BleDevice> found, String selector) throws IOException {
+		if ("*".equals(selector)) {
+			if (found.isEmpty()) {
+				throw new IOException("no devices found advertising service " + Ble.SERVICE_UUID + " within "
+						+ BLE_SCAN_TIMEOUT_MS + "ms");
+			}
+			return found.get(0);
+		} else if ("1".equals(selector)) {
+			if (found.size() == 0) {
+				throw new IOException("no devices found advertising service " + Ble.SERVICE_UUID + " within "
+						+ BLE_SCAN_TIMEOUT_MS + "ms");
+			} else if (found.size() > 1) {
+				List<String> addresses = new ArrayList<>();
+				for (BleDevice d : found) {
+					addresses.add(d.address);
+				}
+				throw new IOException("multiple devices found advertising service " + Ble.SERVICE_UUID
+						+ " within " + BLE_SCAN_TIMEOUT_MS + "ms: " + addresses);
+			}
+			return found.get(0);
+		} else {
+			List<BleDevice> matches = new ArrayList<>();
+			String lowerSelector = selector.toLowerCase(Locale.ROOT);
+			for (BleDevice device : found) {
+				if (device.address.toLowerCase(Locale.ROOT).contains(lowerSelector)
+						|| (device.name != null && device.name.toLowerCase(Locale.ROOT).contains(lowerSelector))) {
+					matches.add(device);
+				}
+			}
+			if (matches.isEmpty()) {
+				throw new IOException("no device matching \"" + selector + "\" found advertising service "
+						+ Ble.SERVICE_UUID + " within " + BLE_SCAN_TIMEOUT_MS + "ms");
+			} else if (matches.size() > 1) {
+				List<String> addresses = new ArrayList<>();
+				for (BleDevice d : matches) {
+					addresses.add(d.address);
+				}
+				throw new IOException("multiple devices matched \"" + selector + "\": " + addresses);
+			}
+			return matches.get(0);
 		}
 	}
 }
