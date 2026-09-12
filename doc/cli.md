@@ -220,10 +220,13 @@ ICONSPEC|<name>|<spec>
 
 The cached image can then be referenced from any `BYTES` field as `#<name>` instead of an
 `@<filepath>` - `TextCommandFormat`'s field parsing resolves it directly from the in-memory cache,
-so it never touches disk. In practice that's `FILE_UPLOAD`'s `DATA` field: `DRAW_IMAGE` itself
-takes a device-storage `VOLUME`+`PATH` (doc/PROTOCOL.md §8), not raw bytes, so an `ICONSPEC`-
-generated image still has to be uploaded to a volume before a drawing command can reference its
-path.
+so it never touches disk. Two commands can consume it:
+- `DRAW_IMAGE_DATA` (doc/PROTOCOL.md §12.17) draws it directly in one command - no upload step.
+  Requires firmware advertising `FEATURE_BITMASK` bit9; older firmware NACKs it with
+  `UNSUPPORTED_COMMAND`.
+- `FILE_UPLOAD`'s `DATA` field, followed by `DRAW_IMAGE` referencing the uploaded path (§12.7) -
+  `DRAW_IMAGE` itself only ever takes a device-storage `VOLUME`+`PATH`, not raw bytes, so this
+  two-step flow is the only option against firmware predating `DRAW_IMAGE_DATA`.
 
 **Requires** the `cz.bliksoft.java:common-java-utils` dependency on the classpath (see
 [Classpath Requirements](#classpath-requirements) above) - without it, `ICONSPEC` fails with an
@@ -236,7 +239,13 @@ relative image paths against:
 ./hmi-cli.sh -t serial -a COM5 -i ./branding-images -f draw.macro
 ```
 
-**Example:**
+**Example (one-step, requires `DRAW_IMAGE_DATA` support):**
+```
+ICONSPEC|logo|<icon spec string>
+DRAW_IMAGE_DATA|10|10|REPLACE|REFRESH_NOW|#logo
+```
+
+**Example (two-step, works against any firmware):**
 ```
 ICONSPEC|logo|<icon spec string>
 FILE_UPLOAD|SD|/logo.epi|#logo

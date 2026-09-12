@@ -14,6 +14,7 @@ import cz.bliksoft.hmieink.protocol.ClearArtifactsFlags;
 import cz.bliksoft.hmieink.protocol.Color;
 import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.ConfigFlags;
+import cz.bliksoft.hmieink.protocol.DrawImageFlags;
 import cz.bliksoft.hmieink.protocol.DrawMode;
 import cz.bliksoft.hmieink.protocol.DrawTextFlags;
 import cz.bliksoft.hmieink.protocol.Encoding;
@@ -63,13 +64,15 @@ import static cz.bliksoft.hmieink.protocol.schema.FieldSpec.u8Flags;
  *
  * <p>
  * Bulk-binary fields (image/screen/file/OTA payloads) are modeled as plain
- * {@code BYTES} - RLE- compressed image transfers are out of scope here (this
- * schema always writes {@code
- * Encoding.RAW} on encode); use {@code EpiImageCodec}/the dedicated
- * manual-check code for those. {@code FILE_LIST_RESPONSE}'s repeated entries
- * are similarly left as one opaque trailing blob (decode-only, and this project
- * already has no dedicated typed listing API to feed) rather than fully
- * itemized.
+ * {@code BYTES}. {@code FULL_IMAGE_TRANSFER}/{@code PARTIAL_IMAGE_TRANSFER}'s
+ * {@code ENCODING}/{@code DECODED_LEN} are plain (caller-supplied) fields, not
+ * derived - {@link cz.bliksoft.hmieink.protocol.HmiDevice#fullImageTransfer}/
+ * {@code partialImageTransfer} choose RLE or RAW per transfer (whichever is
+ * smaller) and set them accordingly; only {@code ENCODED_LEN} stays derived,
+ * from whatever {@code DATA} ends up holding. {@code FILE_LIST_RESPONSE}'s
+ * repeated entries are similarly left as one opaque trailing blob (decode-only,
+ * and this project already has no dedicated typed listing API to feed) rather
+ * than fully itemized.
  */
 public final class CommandSchema {
 
@@ -121,16 +124,13 @@ public final class CommandSchema {
 				spec(CommandId.LOG_MESSAGE, "LOG_MESSAGE", true, bytes("MARKER", LengthPrefix.NONE)),
 
 				// --- Image/display (0x0100-0x01FF), doc/PROTOCOL.md §6-§9 ---
-				spec(CommandId.FULL_IMAGE_TRANSFER, "FULL_IMAGE_TRANSFER", true,
-						u8Enum("ENCODING", Encoding.class).derived(f -> (long) Encoding.RAW),
-						u8Flags("FLAGS", WriteFlags.class),
-						u32le("DECODED_LEN").derived(f -> (long) ((byte[]) f.get("DATA")).length),
+				spec(CommandId.FULL_IMAGE_TRANSFER, "FULL_IMAGE_TRANSFER", true, u8Enum("ENCODING", Encoding.class),
+						u8Flags("FLAGS", WriteFlags.class), u32le("DECODED_LEN"),
 						u32le("ENCODED_LEN").derived(f -> (long) ((byte[]) f.get("DATA")).length),
 						bytesRef("DATA", "ENCODED_LEN")),
 				spec(CommandId.PARTIAL_IMAGE_TRANSFER, "PARTIAL_IMAGE_TRANSFER", true,
-						u8Enum("ENCODING", Encoding.class).derived(f -> (long) Encoding.RAW),
-						u8Flags("FLAGS", WriteFlags.class), u16le("X"), u16le("Y"), u16le("WIDTH"), u16le("HEIGHT"),
-						u32le("DECODED_LEN").derived(f -> (long) ((byte[]) f.get("DATA")).length),
+						u8Enum("ENCODING", Encoding.class), u8Flags("FLAGS", WriteFlags.class), u16le("X"), u16le("Y"),
+						u16le("WIDTH"), u16le("HEIGHT"), u32le("DECODED_LEN"),
 						u32le("ENCODED_LEN").derived(f -> (long) ((byte[]) f.get("DATA")).length),
 						bytesRef("DATA", "ENCODED_LEN")),
 				spec(CommandId.READ_SCREEN, "READ_SCREEN", true, u8Enum("SOURCE", ReadScreenSource.class),
@@ -163,7 +163,7 @@ public final class CommandSchema {
 						u8Enum("ALIGN", TextAlign.class), u8("WRAP"),
 						u8Flags("FLAGS", WriteFlags.class, DrawTextFlags.class), string("TEXT", LengthPrefix.U16LE)),
 				spec(CommandId.DRAW_IMAGE, "DRAW_IMAGE", true, u16le("X"), u16le("Y"),
-						u8Enum("DRAW_MODE", DrawMode.class), u8Flags("FLAGS", WriteFlags.class),
+						u8Enum("DRAW_MODE", DrawMode.class), u8Flags("FLAGS", WriteFlags.class, DrawImageFlags.class),
 						u8Enum("VOLUME", Volume.class), string("PATH", LengthPrefix.U8)),
 				spec(CommandId.REFRESH, "REFRESH", true, u8("MODE")),
 				spec(CommandId.SHIFT_REGION, "SHIFT_REGION", true, u16le("X"), u16le("Y"), u16le("WIDTH"),
@@ -187,6 +187,10 @@ public final class CommandSchema {
 				spec(CommandId.FAST_CLEAR, "FAST_CLEAR", true, u8Enum("COLOR", Color.class),
 						u8Flags("FLAGS", WriteFlags.class)),
 				spec(CommandId.SET_CUSTOM_FONT_FOLDER, "SET_CUSTOM_FONT_FOLDER", true, string("PATH", LengthPrefix.U8)),
+				spec(CommandId.DRAW_IMAGE_DATA, "DRAW_IMAGE_DATA", true, u16le("X"), u16le("Y"),
+						u8Enum("DRAW_MODE", DrawMode.class), u8Flags("FLAGS", WriteFlags.class, DrawImageFlags.class),
+						u32le("DATA_LEN").derived(f -> (long) ((byte[]) f.get("DATA")).length),
+						bytesRef("DATA", "DATA_LEN")),
 
 				// --- Configuration (0x0400-0x04FF), doc/PROTOCOL.md §13 ---
 				spec(CommandId.CONFIG_BACKUP_REQUEST, "CONFIG_BACKUP_REQUEST", true),

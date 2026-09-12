@@ -24,10 +24,12 @@ package cz.bliksoft.hmieink.protocol.schema;
  * - {@link PayloadCodec#encode} computes their value via {@link #deriveFn}.
  * This covers every length/count prefix that isn't baked directly into a
  * {@code STRING}/{@code BYTES}/{@code REPEATED_STRING_TAIL} field's own
- * encoding (e.g. image/screen commands' {@code DECODED_LEN}/{@code ENCODED_LEN}
- * pair, or {@code OTA_INSTALL}'s {@code HASH_LEN}). Derived fields are still
- * fully decoded and shown when reading an arbitrary payload back (e.g.
- * {@code HmiDevice#describe}) - "derived" only means "not required as input".
+ * encoding (e.g. {@code FULL_IMAGE_TRANSFER}/{@code PARTIAL_IMAGE_TRANSFER}'s
+ * {@code ENCODED_LEN} - computed from whichever bytes {@code DATA} ends up
+ * holding once RAW-vs-RLE is chosen - or {@code OTA_INSTALL}'s
+ * {@code HASH_LEN}). Derived fields are still fully decoded and shown when
+ * reading an arbitrary payload back (e.g. {@code HmiDevice#describe}) -
+ * "derived" only means "not required as input".
  *
  * <p>
  * A {@code U8} field's symbolic names come from {@link #enumClasses} - more

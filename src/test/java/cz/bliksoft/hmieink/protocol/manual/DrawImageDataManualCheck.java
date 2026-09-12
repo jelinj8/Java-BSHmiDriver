@@ -3,7 +3,6 @@ package cz.bliksoft.hmieink.protocol.manual;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 
 import cz.bliksoft.hmieink.protocol.Color;
 import cz.bliksoft.hmieink.protocol.CommandClient;
@@ -14,34 +13,34 @@ import cz.bliksoft.hmieink.protocol.DrawMode;
 import cz.bliksoft.hmieink.protocol.EpiImageCodec;
 import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
-import cz.bliksoft.hmieink.protocol.Volume;
 
 /**
- * Manual, real-hardware verification of DRAW_IMAGE (doc/PROTOCOL.md §12.7), the
- * {@code .epi} format ({@code EpiImageCodec}), and the FLAGS.IGNORE_MASK bit
- * ({@code DrawImageFlags}): draws a striped background, then three badge icons
- * uploaded via FILE_UPLOAD and DRAW_IMAGEd side by side - (1) a masked badge
- * with default FLAGS (mask respected: corners transparent, stripes show
- * through), (2) the same masked badge with FLAGS.IGNORE_MASK set (corners
- * forced opaque, stripes fully covered), (3) an unmasked badge (no HAS_MASK at
- * all, confirming that path is unaffected by the IGNORE_MASK change). NOT part
- * of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of DRAW_IMAGE_DATA (doc/PROTOCOL.md
+ * §12.17, {@code CommandId.DRAW_IMAGE_DATA = 0x0310}) - hand-builds the payload
+ * directly (bypassing {@code CommandSchema}/{@code HmiDevice}, same style as
+ * {@code FullImageTransferManualCheck}) so it can be run against real hardware
+ * independent of the Java client's own schema/typed-API support for the
+ * command. Draws the same three-badge scenario as {@link DrawImageManualCheck}
+ * - masked/default, masked/IGNORE_MASK, unmasked - but in one command each,
+ * with no FILE_UPLOAD step at all. Requires firmware advertising
+ * {@code FEATURE_BITMASK} bit9; older firmware NACKs with UNSUPPORTED_COMMAND.
+ * NOT part of the automated {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
- *     cz.bliksoft.hmieink.protocol.manual.DrawImageManualCheck COM5
+ *     cz.bliksoft.hmieink.protocol.manual.DrawImageDataManualCheck COM5
  * </pre>
  */
-public final class DrawImageManualCheck {
+public final class DrawImageDataManualCheck {
 
 	private static final int ICON_SIZE = 60;
 
-	private DrawImageManualCheck() {
+	private DrawImageDataManualCheck() {
 	}
 
 	public static void main(String[] args) throws Exception {
 		if (args.length != 1) {
-			System.err.println("usage: DrawImageManualCheck <port, e.g. COM5>");
+			System.err.println("usage: DrawImageDataManualCheck <port, e.g. COM5>");
 			System.exit(2);
 		}
 		String portDescriptor = args[0];
@@ -52,46 +51,40 @@ public final class DrawImageManualCheck {
 				+ "flash black then white before this test's own writes)...");
 		client.connect();
 		try {
-			// Solid BLACK backdrop, not stripes: the badge's own "outside rounded rect"
-			// corner
-			// pixels encode as WHITE in the color plane (see buildBadgeIcon), so a striped
-			// background can coincidentally make "transparent, background shows through"
-			// and
-			// "opaque, drawing the badge's own white" look identical wherever a corner
-			// lands on
-			// a white stripe. Black is the one background color guaranteed to contrast with
-			// that
-			// white corner content, so mask-respected (black corners) vs
-			// mask-ignored/unmasked
-			// (white corners) is unambiguous regardless of exact pixel alignment.
+			// Solid BLACK backdrop, not stripes - see DrawImageManualCheck's identical
+			// comment:
+			// the badge's "outside rounded rect" corner pixels encode as WHITE in the color
+			// plane,
+			// so black is the one background guaranteed to contrast with them regardless of
+			// exact
+			// pixel alignment.
 			System.out.println("-> drawing a solid black backdrop (20,20)-(320,140), deferred");
 			drawSolidBlack(client, 20, 20, 300, 120);
 
 			BufferedImage masked = buildBadgeIcon();
 			byte[] epiMasked = EpiImageCodec.encode(masked, true);
 			byte[] epiUnmasked = EpiImageCodec.encode(masked, false);
-
 			System.out.println(
-					"-> (1) masked badge, default FLAGS - corners should stay BLACK (background shows through)");
-			upload(client, "/badge_masked.epi", epiMasked);
-			drawImage(client, 50, 50, "/badge_masked.epi", 0x00);
+					"   encoded: masked=" + epiMasked.length + " bytes, unmasked=" + epiUnmasked.length + " bytes");
 
-			System.out.println("-> (2) masked badge, FLAGS.IGNORE_MASK - corners should turn WHITE (forced opaque)");
-			drawImage(client, 130, 50, "/badge_masked.epi", DrawImageFlags.IGNORE_MASK);
+			System.out.println("-> (1) DRAW_IMAGE_DATA masked badge, default FLAGS - corners should stay BLACK");
+			drawImageData(client, 50, 50, epiMasked, 0x00);
+
+			System.out.println("-> (2) DRAW_IMAGE_DATA masked badge, FLAGS.IGNORE_MASK - corners should turn WHITE");
+			drawImageData(client, 130, 50, epiMasked, DrawImageFlags.IGNORE_MASK);
 
 			System.out
-					.println("-> (3) unmasked badge (no HAS_MASK), default FLAGS - corners WHITE too (always opaque)");
-			upload(client, "/badge_unmasked.epi", epiUnmasked);
-			drawImage(client, 210, 50, "/badge_unmasked.epi", 0x00);
+					.println("-> (3) DRAW_IMAGE_DATA unmasked badge (no HAS_MASK), default FLAGS - corners WHITE too");
+			drawImageData(client, 210, 50, epiUnmasked, 0x00);
 
 			System.out.println("-> sending REFRESH(MODE=0x01)");
 			try {
 				Frame response = client.send(CommandId.REFRESH, new byte[] { 0x01 }, 10_000);
 				System.out.println("OK: device replied 0x" + Integer.toHexString(response.getCommandId())
 						+ " - check the panel: three badges left-to-right on a solid black backdrop - "
-						+ "(1) BLACK corners (transparent, black background shows through, badge reads as "
-						+ "rounded), (2) WHITE corners (forced opaque, square-cornered look), "
-						+ "(3) WHITE corners too (unmasked path, same square-cornered look as (2))");
+						+ "(1) BLACK corners (transparent, rounded look), (2) WHITE corners (forced "
+						+ "opaque, square look), (3) WHITE corners too (unmasked path) - identical result "
+						+ "to DrawImageManualCheck, but with no FILE_UPLOAD ever sent");
 			} catch (CommandNackException e) {
 				System.err.println("FAILED: REFRESH NACK status=0x" + Integer.toHexString(e.getStatus()));
 				System.exit(1);
@@ -147,29 +140,18 @@ public final class DrawImageManualCheck {
 		send(client, CommandId.DRAW_RECT, payload.array());
 	}
 
-	private static void upload(CommandClient client, String path, byte[] content) throws Exception {
-		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload = ByteBuffer.allocate(2 + pathBytes.length + 4 + content.length)
-				.order(ByteOrder.LITTLE_ENDIAN);
-		payload.put((byte) Volume.INTERNAL);
-		payload.put((byte) pathBytes.length);
-		payload.put(pathBytes);
-		payload.putInt(content.length);
-		payload.put(content);
-		send(client, CommandId.FILE_UPLOAD, payload.array());
-	}
-
-	private static void drawImage(CommandClient client, int x, int y, String path, int extraFlags) throws Exception {
-		byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
-		ByteBuffer payload = ByteBuffer.allocate(8 + pathBytes.length).order(ByteOrder.LITTLE_ENDIAN);
+	// doc/PROTOCOL.md §12.17: X(u16LE) Y(u16LE) DRAW_MODE(u8) FLAGS(u8)
+	// DATA_LEN(u32LE) DATA(.epi bytes)
+	private static void drawImageData(CommandClient client, int x, int y, byte[] epiBytes, int extraFlags)
+			throws Exception {
+		ByteBuffer payload = ByteBuffer.allocate(10 + epiBytes.length).order(ByteOrder.LITTLE_ENDIAN);
 		payload.putShort((short) x);
 		payload.putShort((short) y);
 		payload.put((byte) DrawMode.REPLACE);
 		payload.put((byte) extraFlags); // FLAGS: deferred (WriteFlags.REFRESH_NOW/FULL unset) + extraFlags
-		payload.put((byte) Volume.INTERNAL);
-		payload.put((byte) pathBytes.length);
-		payload.put(pathBytes);
-		send(client, CommandId.DRAW_IMAGE, payload.array());
+		payload.putInt(epiBytes.length);
+		payload.put(epiBytes);
+		send(client, CommandId.DRAW_IMAGE_DATA, payload.array());
 	}
 
 	private static void send(CommandClient client, int commandId, byte[] payload) throws Exception {

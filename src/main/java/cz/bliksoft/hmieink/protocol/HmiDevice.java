@@ -131,14 +131,31 @@ public class HmiDevice implements Closeable {
 
 	// --- image transfer / screen readback / degauss (§6-§9) ---
 
+	/**
+	 * Sends {@code rawBitmap} (packed 1bpp, row-major, doc/PROTOCOL.md §6) as the
+	 * full panel image, auto-selecting RLE ({@link RlePackBits}) over RAW whenever
+	 * it's actually smaller - fully transparent to the caller, matching firmware's
+	 * own generic RAW/RLE decode (it never assumed RAW-only).
+	 */
 	public void fullImageTransfer(byte[] rawBitmap, int flags) throws IOException {
-		send(CommandId.FULL_IMAGE_TRANSFER, fields("FLAGS", (long) flags, "DATA", rawBitmap));
+		byte[] rle = RlePackBits.encode(rawBitmap);
+		boolean useRle = rle.length < rawBitmap.length;
+		send(CommandId.FULL_IMAGE_TRANSFER, fields("ENCODING", (long) (useRle ? Encoding.RLE_PACKBITS : Encoding.RAW),
+				"FLAGS", (long) flags, "DECODED_LEN", (long) rawBitmap.length, "DATA", useRle ? rle : rawBitmap));
 	}
 
+	/**
+	 * Same RLE-vs-RAW auto-selection as {@link #fullImageTransfer}, scoped to a
+	 * region.
+	 */
 	public void partialImageTransfer(int x, int y, int width, int height, byte[] rawBitmap, int flags)
 			throws IOException {
-		send(CommandId.PARTIAL_IMAGE_TRANSFER, fields("X", (long) x, "Y", (long) y, "WIDTH", (long) width, "HEIGHT",
-				(long) height, "FLAGS", (long) flags, "DATA", rawBitmap));
+		byte[] rle = RlePackBits.encode(rawBitmap);
+		boolean useRle = rle.length < rawBitmap.length;
+		send(CommandId.PARTIAL_IMAGE_TRANSFER,
+				fields("X", (long) x, "Y", (long) y, "WIDTH", (long) width, "HEIGHT", (long) height, "ENCODING",
+						(long) (useRle ? Encoding.RLE_PACKBITS : Encoding.RAW), "FLAGS", (long) flags, "DECODED_LEN",
+						(long) rawBitmap.length, "DATA", useRle ? rle : rawBitmap));
 	}
 
 	public Map<String, Object> readScreen(int source, int mode, int x, int y, int width, int height)
@@ -238,6 +255,28 @@ public class HmiDevice implements Closeable {
 	public void drawImage(int x, int y, int drawMode, int flags, int volume, String path) throws IOException {
 		send(CommandId.DRAW_IMAGE, fields("X", (long) x, "Y", (long) y, "DRAW_MODE", (long) drawMode, "FLAGS",
 				(long) flags, "VOLUME", (long) volume, "PATH", path));
+	}
+
+	/**
+	 * Draws an .epi image (e.g. from {@link EpiImageCodec#encode} or
+	 * {@link IconSpecCache#get}) inline, without a prior {@link #uploadFile}.
+	 * Transparency is optional and controlled entirely by the embedded
+	 * {@code .epi}'s own FLAGS/mask stream (see
+	 * {@link EpiImageCodec#encode(java.awt.image.BufferedImage, boolean)}'s
+	 * {@code includeMask}) - same masked-pixel behavior as {@link #drawImage}, not
+	 * a separate parameter here; pass {@link DrawImageFlags#IGNORE_MASK} in
+	 * {@code flags} to force fully-opaque rendering instead.
+	 * <p>
+	 * Requires firmware advertising {@code FEATURE_BITMASK} bit9 (doc/PROTOCOL.md
+	 * §5.2/§12.17) - this method does not check it itself (this library never gates
+	 * on capability TLVs internally); callers targeting possibly-older firmware
+	 * should check {@link HandshakeCapabilities#getFeatureBitmask()} first, or
+	 * catch a {@link CommandNackException} with {@code Status.UNSUPPORTED_COMMAND}
+	 * and fall back to {@link #uploadFile}+{@link #drawImage}.
+	 */
+	public void drawImageData(int x, int y, int drawMode, int flags, byte[] epiImageData) throws IOException {
+		send(CommandId.DRAW_IMAGE_DATA, fields("X", (long) x, "Y", (long) y, "DRAW_MODE", (long) drawMode, "FLAGS",
+				(long) flags, "DATA", epiImageData));
 	}
 
 	public void refresh(int mode) throws IOException {

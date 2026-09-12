@@ -39,6 +39,7 @@ public final class CommandId {
 	public static final int FILL_IMAGE = 0x030D;
 	public static final int FAST_CLEAR = 0x030E;
 	public static final int SET_CUSTOM_FONT_FOLDER = 0x030F;
+	public static final int DRAW_IMAGE_DATA = 0x0310;
 
 	public static final int CONFIG_BACKUP_REQUEST = 0x0400;
 	public static final int CONFIG_BACKUP_DATA = 0x0401;
