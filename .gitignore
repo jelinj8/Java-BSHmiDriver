@@ -6,3 +6,31 @@ target/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Java
+.classpath
+.project
+.settings/
+
+# Maven/IDEA
+out/
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse
+*.launch
+.metadata/
+.buildpath
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+.nb-gradle/
+
+# VS Code
+.vscode/
+

@@ -54,7 +54,7 @@ public final class Cli {
 		@CommandLine.Option(names = { "-a",
 				"--address" }, required = true, description = "host:port (tcp), COM port (serial), or output path (file)\nFor ble:\n"
 						+ "\t'scan' (list devices and exit, use 'scan <name/addr>' to filter)\n\t'*' (first device found)\n"
-						+ "\t'1' (the device if exactly one is found, else error)\n\t'<name/address substring>' or a comma-separated of those\n\t'=<exact address/name>' for fast connection to known device\n"
+						+ "\t'1' (the device if exactly one is found, else error)\n\t'<name/address substring>' or comma-separated list of those\n\t'=<exact address/name>' for fast connection to known device\n"
 						+ "Script will be run against each device found")
 		String address;
 
@@ -83,8 +83,8 @@ public final class Cli {
 		boolean pipe;
 
 		@CommandLine.Option(names = { "-s",
-				"--separator" }, description = "change the field separator (default |) for everything that follows")
-		List<String> separators = new ArrayList<>();
+				"--separator" }, description = "change the field separator (default |) for subsequent commands - must be exactly one character")
+		char separator = '|';
 	}
 
 	static final class VersionProvider implements CommandLine.IVersionProvider {
@@ -135,7 +135,7 @@ public final class Cli {
 			try (TcpHmiDevice device = new TcpHmiDevice(hostPort[0], Integer.parseInt(hostPort[1]))) {
 				device.connect();
 				handshake(device, opts);
-				processArgs(device, args);
+				processArgs(device, opts, args);
 			}
 			return;
 		}
@@ -143,7 +143,7 @@ public final class Cli {
 			try (SerialHmiDevice device = new SerialHmiDevice(opts.address)) {
 				device.connect();
 				handshake(device, opts);
-				processArgs(device, args);
+				processArgs(device, opts, args);
 			}
 			return;
 		}
@@ -151,7 +151,7 @@ public final class Cli {
 			try (FileHmiDevice device = new FileHmiDevice(opts.address)) {
 				device.connect();
 				handshake(device, opts);
-				processArgs(device, args);
+				processArgs(device, opts, args);
 			}
 			return;
 		}
@@ -192,7 +192,7 @@ public final class Cli {
 					try (BleHmiDevice device = new BleHmiDevice(adapter, target.getAddress())) {
 						device.connect();
 						handshake(device, opts);
-						processArgs(device, args);
+						processArgs(device, opts, args);
 					}
 				}
 			}
@@ -226,9 +226,9 @@ public final class Cli {
 	 * {@code -f}/{@code -c}/{@code -p}/{@code -s} exactly as encountered - the
 	 * ordering guarantee {@link Options}'s own picocli-collected lists can't give.
 	 */
-	private static void processArgs(HmiDevice device, String[] args) throws IOException {
+	private static void processArgs(HmiDevice device, Options opts, String[] args) throws IOException {
 		ScriptRunner runner = new ScriptRunner(device);
-		char separator = '|';
+		char separator = opts.separator;
 		int i = 0;
 		while (i < args.length) {
 			String arg = args[i];
@@ -293,8 +293,10 @@ public final class Cli {
 
 	/**
 	 * Print the scan results to stdout in a tabular format.
+	 *
+	 * @param found the list of BLE device results to print
 	 */
-	private static void printScanResults(List<BleDeviceResult> found) {
+	static void printScanResults(List<BleDeviceResult> found) {
 		if (found.isEmpty()) {
 			System.out.println("No devices found.");
 			return;
@@ -308,13 +310,23 @@ public final class Cli {
 	}
 
 	/**
-	 * Resolve a device selector to an address.
+	 * Resolve a device selector to a device result from a BLE scan.
+	 *
+	 * <p>Supported selectors:
+	 * <ul>
+	 * <li>{@code "*"} - return the first device found</li>
+	 * <li>{@code "1"} - return the only device; throw if zero or multiple found</li>
+	 * <li>{@code "<substring>"} - match against device name or address (case-insensitive);
+	 * throw if zero or multiple matches</li>
+	 * <li>{@code "<name1>,<name2>,..."} - comma-separated list of substrings to match
+	 * (each is tried until a unique match is found)</li>
+	 * </ul>
 	 *
 	 * @param found    the list of devices found during scan
 	 * @param selector the selector string from -a (e.g. "*", "1", "device name",
-	 *                 "address")
-	 * @return the resolved device
-	 * @throws IOException if no match or ambiguous match is found
+	 *                 "address", or comma-separated substrings)
+	 * @return the resolved device result
+	 * @throws IOException if no match, ambiguous match, or other resolution error
 	 */
 	public static BleDeviceResult resolveDevice(List<BleDeviceResult> found, String selector) throws IOException {
 		if ("*".equals(selector)) {

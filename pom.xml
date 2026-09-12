@@ -43,7 +43,7 @@
 		<junit.version>5.10.2</junit.version>
 		<jserialcomm.version>2.11.4</jserialcomm.version>
 		<bstoolbox-ble.version>0.4.0-SNAPSHOT</bstoolbox-ble.version>
-		<bstoolbox.version>0.8-SNAPSHOT</bstoolbox.version>
+		<bstoolbox.version>0.7</bstoolbox.version>
 		<picocli.version>4.7.6</picocli.version>
 	</properties>
 
