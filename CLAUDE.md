@@ -86,7 +86,7 @@ containing:
 - `lib/` — the CLI's provided-scope runtime deps: jSerialComm, BSToolbox-BLE (+ its jackson
   transitives), picocli. Deliberately **not** `common-java-utils` — that's only used by the
   font-generator's `GenerateDeviceFonts` manual tool, not `Cli`.
-- `hmi-cli.sh` / `hmi-cli.bat` — self-locating launch scripts (`java -cp <dir>/bshmidriver-cli.jar;<dir>/lib/*
+- `hmi-cli.sh` / `hmi-cli.bat` / `hmi-cli.command` — self-locating launch scripts (`java -cp <dir>/bshmidriver-cli.jar;<dir>/lib/*
   cz.bliksoft.hmieink.protocol.cli.Cli "$@"`); pass all CLI args through unchanged. Note: no
   manifest `Class-Path`/`addClasspath` is used here — that maven-jar-plugin feature silently omits
   `provided`-scope deps, which all three of the above are.

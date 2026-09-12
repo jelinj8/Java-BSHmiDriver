@@ -17,7 +17,6 @@ import cz.bliksoft.hmieink.protocol.ConfigFlags;
 import cz.bliksoft.hmieink.protocol.DrawMode;
 import cz.bliksoft.hmieink.protocol.DrawTextFlags;
 import cz.bliksoft.hmieink.protocol.Encoding;
-import cz.bliksoft.hmieink.protocol.EntryType;
 import cz.bliksoft.hmieink.protocol.FillTileMode;
 import cz.bliksoft.hmieink.protocol.FontId;
 import cz.bliksoft.hmieink.protocol.GpioConfigureFlags;
@@ -55,18 +54,22 @@ import static cz.bliksoft.hmieink.protocol.schema.FieldSpec.u8Enum;
 import static cz.bliksoft.hmieink.protocol.schema.FieldSpec.u8Flags;
 
 /**
- * The full command payload registry (doc/PROTOCOL.md §5-§18) - one {@link CommandSpec} per
- * {@link CommandId}, in wire field order. This is the single source of truth {@link PayloadCodec}
- * and {@code TextCommandFormat} both build on, so the wire layout only needs to be transcribed
- * from the spec once per command rather than duplicated across a typed API and a text grammar.
+ * The full command payload registry (doc/PROTOCOL.md §5-§18) - one
+ * {@link CommandSpec} per {@link CommandId}, in wire field order. This is the
+ * single source of truth {@link PayloadCodec} and {@code TextCommandFormat}
+ * both build on, so the wire layout only needs to be transcribed from the spec
+ * once per command rather than duplicated across a typed API and a text
+ * grammar.
  *
  * <p>
- * Bulk-binary fields (image/screen/file/OTA payloads) are modeled as plain {@code BYTES} - RLE-
- * compressed image transfers are out of scope here (this schema always writes {@code
- * Encoding.RAW} on encode); use {@code EpiImageCodec}/the dedicated manual-check code for those.
- * {@code FILE_LIST_RESPONSE}'s repeated entries are similarly left as one opaque trailing blob
- * (decode-only, and this project already has no dedicated typed listing API to feed) rather than
- * fully itemized.
+ * Bulk-binary fields (image/screen/file/OTA payloads) are modeled as plain
+ * {@code BYTES} - RLE- compressed image transfers are out of scope here (this
+ * schema always writes {@code
+ * Encoding.RAW} on encode); use {@code EpiImageCodec}/the dedicated
+ * manual-check code for those. {@code FILE_LIST_RESPONSE}'s repeated entries
+ * are similarly left as one opaque trailing blob (decode-only, and this project
+ * already has no dedicated typed listing API to feed) rather than fully
+ * itemized.
  */
 public final class CommandSchema {
 
@@ -111,8 +114,10 @@ public final class CommandSchema {
 				spec(CommandId.HANDSHAKE_REQUEST, "HANDSHAKE_REQUEST", true, u8Enum("PIN_TYPE", AuthLevel.class),
 						string("PIN", LengthPrefix.U8)),
 				spec(CommandId.HANDSHAKE_RESPONSE, "HANDSHAKE_RESPONSE", false, bytes("TLV_DATA", LengthPrefix.NONE)),
-				spec(CommandId.ACK, "ACK", false, u8("REF_SEQ"), u16le("REF_COMMAND_ID"), u8Enum("STATUS", Status.class)),
-				spec(CommandId.NACK, "NACK", false, u8("REF_SEQ"), u16le("REF_COMMAND_ID"), u8Enum("STATUS", Status.class)),
+				spec(CommandId.ACK, "ACK", false, u8("REF_SEQ"), u16le("REF_COMMAND_ID"),
+						u8Enum("STATUS", Status.class)),
+				spec(CommandId.NACK, "NACK", false, u8("REF_SEQ"), u16le("REF_COMMAND_ID"),
+						u8Enum("STATUS", Status.class)),
 				spec(CommandId.LOG_MESSAGE, "LOG_MESSAGE", true, bytes("MARKER", LengthPrefix.NONE)),
 
 				// --- Image/display (0x0100-0x01FF), doc/PROTOCOL.md §6-§9 ---
@@ -153,8 +158,9 @@ public final class CommandSchema {
 				spec(CommandId.CLEAR_REGION, "CLEAR_REGION", true, u16le("X"), u16le("Y"), u16le("WIDTH"),
 						u16le("HEIGHT"), u8Enum("COLOR", Color.class), u8Flags("FLAGS", WriteFlags.class)),
 				spec(CommandId.DRAW_TEXT, "DRAW_TEXT", true, u16le("X"), u16le("Y"), u16le("WIDTH"),
-						u8Enum("FONT_ID", FontId.class), u8Enum("COLOR", Color.class), u8Enum("BACKGROUND", TextBackground.class),
-						u8Enum("DRAW_MODE", DrawMode.class), u8Enum("ALIGN", TextAlign.class), u8("WRAP"),
+						u8Enum("FONT_ID", FontId.class), u8Enum("COLOR", Color.class),
+						u8Enum("BACKGROUND", TextBackground.class), u8Enum("DRAW_MODE", DrawMode.class),
+						u8Enum("ALIGN", TextAlign.class), u8("WRAP"),
 						u8Flags("FLAGS", WriteFlags.class, DrawTextFlags.class), string("TEXT", LengthPrefix.U16LE)),
 				spec(CommandId.DRAW_IMAGE, "DRAW_IMAGE", true, u16le("X"), u16le("Y"),
 						u8Enum("DRAW_MODE", DrawMode.class), u8Flags("FLAGS", WriteFlags.class),
@@ -189,7 +195,8 @@ public final class CommandSchema {
 				spec(CommandId.CONFIG_RESTORE, "CONFIG_RESTORE", true, u8("CONFIG_VERSION"),
 						bytes("TLV_DATA", LengthPrefix.NONE)),
 				spec(CommandId.SET_WIFI_CONFIG, "SET_WIFI_CONFIG", true, string("SSID", LengthPrefix.U8),
-						string("PASSWORD", LengthPrefix.U8), u8Flags("FLAGS", ConfigFlags.class, WifiConfigFlags.class)),
+						string("PASSWORD", LengthPrefix.U8),
+						u8Flags("FLAGS", ConfigFlags.class, WifiConfigFlags.class)),
 				spec(CommandId.WIFI_STATUS_REQUEST, "WIFI_STATUS_REQUEST", true),
 				spec(CommandId.WIFI_STATUS_RESPONSE, "WIFI_STATUS_RESPONSE", false, u8("ENABLED"), u8("CONNECTED"),
 						string("SSID", LengthPrefix.U8), ipv4("IP_ADDRESS")),
@@ -235,8 +242,8 @@ public final class CommandSchema {
 						string("SRC_PATH", LengthPrefix.U8), string("DST_PATH", LengthPrefix.U8)),
 
 				// --- GPIO (0x0700-0x07FF), doc/PROTOCOL.md §15 ---
-				spec(CommandId.GPIO_CONFIGURE, "GPIO_CONFIGURE", true, u8("PIN_ID"),
-						u8Enum("MODE", GpioMode.class), u8Flags("FLAGS", GpioConfigureFlags.class)),
+				spec(CommandId.GPIO_CONFIGURE, "GPIO_CONFIGURE", true, u8("PIN_ID"), u8Enum("MODE", GpioMode.class),
+						u8Flags("FLAGS", GpioConfigureFlags.class)),
 				spec(CommandId.GPIO_WRITE, "GPIO_WRITE", true, u8("PIN_ID"), u8("VALUE")),
 				spec(CommandId.GPIO_READ_REQUEST, "GPIO_READ_REQUEST", true, u8("PIN_ID")),
 				spec(CommandId.GPIO_READ_RESPONSE, "GPIO_READ_RESPONSE", false, u8("PIN_ID"), u8("VALUE"),
@@ -251,15 +258,15 @@ public final class CommandSchema {
 				spec(CommandId.OTA_INSTALL, "OTA_INSTALL", true,
 						u32le("TOTAL_LEN").derived(f -> (long) ((byte[]) f.get("IMAGE_DATA")).length),
 						u8Enum("HASH_ALGO", OtaHashAlgo.class),
-						u8("HASH_LEN").derived(f -> (long) OtaHashAlgo.hashLenFor(((Number) f.get("HASH_ALGO")).intValue())),
+						u8("HASH_LEN")
+								.derived(f -> (long) OtaHashAlgo.hashLenFor(((Number) f.get("HASH_ALGO")).intValue())),
 						bytesRef("HASH", "HASH_LEN"), u8Flags("FLAGS", OtaInstallFlags.class),
 						bytesRef("IMAGE_DATA", "TOTAL_LEN")),
 				spec(CommandId.OTA_APPLY, "OTA_APPLY", true),
 				spec(CommandId.OTA_STATUS_REQUEST, "OTA_STATUS_REQUEST", true),
 				spec(CommandId.OTA_STATUS_RESPONSE, "OTA_STATUS_RESPONSE", false, u8("RUNNING_SLOT"),
 						u8("PENDING_VERIFICATION"), string("RUNNING_VERSION", LengthPrefix.U8)),
-				spec(CommandId.OTA_CONFIRM, "OTA_CONFIRM", true),
-				spec(CommandId.OTA_ROLLBACK, "OTA_ROLLBACK", true),
+				spec(CommandId.OTA_CONFIRM, "OTA_CONFIRM", true), spec(CommandId.OTA_ROLLBACK, "OTA_ROLLBACK", true),
 
 				// --- Power (0x0900-0x09FF), doc/PROTOCOL.md §17 ---
 				spec(CommandId.SET_POWER_MODE, "SET_POWER_MODE", true, u8Enum("MODE", PowerMode.class), u8("FLAGS"),

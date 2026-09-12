@@ -71,6 +71,23 @@ pull in the one(s) you actually use, on your own consuming application's classpa
 `common-java-utils-ble` isn't on Maven Central yet; install it locally first
 (`cd BSToolbox-BLE && mvn install`).
 
+## Release Packaging
+
+To build a standalone CLI distribution with all required dependencies included:
+
+```bash
+mvn package -Pdist
+```
+
+This creates:
+- `target/bshmidriver-<version>/` — directory with the packaged CLI (jar, lib folder, and launch scripts)
+- `target/bshmidriver-<version>.zip` — zipped version of the distribution
+
+The distribution includes:
+- `bshmidriver-cli.jar` — the main application jar
+- `lib/` — all required dependencies (jSerialComm, BSToolbox-BLE, picocli)
+- Launch scripts for Windows (`hmi-cli.bat`), Linux (`hmi-cli.sh`) and macOS (`hmi-cli.command`)
+
 ## Status
 
 Verified end-to-end on real hardware against the CrowPanel 4.2" e-paper display: all three
