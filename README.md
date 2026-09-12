@@ -45,6 +45,14 @@ independent implementations of that one spec, kept in lockstep by convention.
 
 ## Usage
 
+See `doc/cli.md` for comprehensive CLI documentation including:
+- Connection specification (TCP, Serial, BLE, File)
+- Command format and escaping rules
+- PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`, `SYNC`)
+- Full command catalog and examples
+
+### Java API
+
 ```java
 try (SerialHmiDevice device = new SerialHmiDevice("COM5")) {
     device.connect();
@@ -53,12 +61,28 @@ try (SerialHmiDevice device = new SerialHmiDevice("COM5")) {
 }
 ```
 
-Or via the CLI:
+### CLI
+
+The CLI requires transport-specific dependencies on the classpath. For Serial or BLE, include `jSerialComm` or `BSToolbox-BLE` respectively. The easiest way to run is using the distributed package built with `mvn package -Pdist`:
 
 ```bash
-java -jar bshmidriver.jar -t serial -a COM5 \
-    -c "FAST_CLEAR|WHITE|0" -c "DRAW_RECT|10|10|100|60|BLACK|REPLACE|true|2|REFRESH_NOW"
+# Build distribution
+mvn package -Pdist
+
+# Then use the launch scripts (automatically includes all dependencies)
+./hmi-cli.sh -t serial -a COM5 -c "FAST_CLEAR|WHITE|0"
+./hmi-cli.sh -t ble -a "*" -c "FAST_CLEAR|WHITE|0"
+./hmi-cli.sh -t tcp -a "192.168.1.100:8080" -c "FAST_CLEAR|WHITE|0"
 ```
+
+Or manually with java (for TCP only, or when you supply dependencies yourself):
+
+```bash
+# TCP only (no external dependencies required)
+java -jar bshmidriver-cli.jar -t tcp -a "192.168.1.100:8080" -c "FAST_CLEAR|WHITE|0"
+```
+
+See `doc/cli.md` for complete CLI documentation.
 
 ## Building
 
