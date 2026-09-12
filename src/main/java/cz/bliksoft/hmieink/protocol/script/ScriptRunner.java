@@ -9,12 +9,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Locale;
 
 import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
 import cz.bliksoft.hmieink.protocol.IconSpecCache;
+import cz.bliksoft.hmieink.protocol.OtaHashAlgo;
 import cz.bliksoft.hmieink.protocol.Volume;
 import cz.bliksoft.hmieink.protocol.sync.FolderSync;
 import cz.bliksoft.hmieink.protocol.sync.SyncMode;
@@ -54,6 +57,18 @@ import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
  * field as {@code #name} (mirroring {@code @<file>}, see
  * {@link TextCommandFormat}). Requires the {@code common-java-utils} library on
  * the classpath.
+ * <li>{@code OTA|@<firmware_file>} - reads the given {@code firmware.bin},
+ * SHA-256-hashes it, and installs it via {@link HmiDevice#otaInstall} with
+ * {@code APPLY_NOW} set (doc/PROTOCOL.md §16.1) - transfer, hash verification,
+ * and the device's own reboot into the new image all happen as part of this one
+ * pseudo-command. The {@code @} is the same {@code BYTES}-field file convention
+ * as everywhere else (see {@link TextCommandFormat#parseBytesToken}), not
+ * OTA-specific syntax. Can take minutes for a multi-hundred-KB image over a
+ * slow transport - the timeout scales with image size (see
+ * {@code OTA_TIMEOUT_FLOOR_MS}), and a PC-side percentage is printed as it
+ * sends (see {@link cz.bliksoft.hmieink.protocol.TransferProgressListener}) -
+ * not a protocol-level chunk acknowledgment, just client-side transfer
+ * instrumentation.
  * </ul>
  *
  * A timed-out {@code WAIT_LOG} throws {@link IOException}, the same as an
@@ -113,6 +128,9 @@ public final class ScriptRunner {
 			return;
 		case "ICONSPEC":
 			runIconSpec(tokens, line, separator);
+			return;
+		case "OTA":
+			runOta(tokens);
 			return;
 		default:
 			Frame response = device.sendText(line, separator);
@@ -225,6 +243,53 @@ public final class ScriptRunner {
 			out.println("<- cached as #" + name + " (" + epi.length + " bytes)");
 		} catch (UnsupportedOperationException e) {
 			throw new IOException(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Floor for {@code OTA}'s transfer timeout, regardless of image size -
+	 * handshake/ACK round trips and connection setup need some minimum budget even
+	 * for a tiny image.
+	 */
+	private static final long OTA_TIMEOUT_FLOOR_MS = 60_000;
+
+	/**
+	 * Assumed worst-case transfer rate (bytes/ms) used to scale {@code OTA}'s
+	 * timeout with image size - deliberately conservative (slower than 115200 baud
+	 * Serial already tests fine at in {@code OtaManualCheck}, and BLE's per-packet
+	 * ACK overhead can make it slower than Serial for large transfers) so a large
+	 * image over a slow transport doesn't spuriously time out mid-transfer.
+	 */
+	private static final double OTA_ASSUMED_BYTES_PER_MS = 5.0;
+
+	private void runOta(List<String> tokens) throws IOException {
+		if (tokens.size() != 2) {
+			throw new IllegalArgumentException("OTA expects exactly one field: @<path to firmware.bin>, got " + tokens);
+		}
+		byte[] image = TextCommandFormat.parseBytesToken(tokens.get(1));
+		byte[] sha256 = sha256(image);
+		long timeoutMs = Math.max(OTA_TIMEOUT_FLOOR_MS, (long) (image.length / OTA_ASSUMED_BYTES_PER_MS));
+		out.println("-> OTA " + tokens.get(1) + " (" + image.length + " bytes, SHA-256, APPLY_NOW, timeout=" + timeoutMs
+				+ "ms - local orchestration, not sent to the device as a single command)");
+		long[] lastPercent = { -1 };
+		device.otaInstall(image, OtaHashAlgo.SHA256, sha256, true, timeoutMs, (sent, total) -> {
+			long percent = total == 0 ? 100 : sent * 100 / total;
+			if (percent != lastPercent[0]) {
+				lastPercent[0] = percent;
+				out.print("\r   sending... " + percent + "% (" + sent + "/" + total + " bytes)");
+				out.flush(); // PrintStream.print() doesn't auto-flush (only println() does) - without this,
+								// every update sits buffered until the final println() below.
+			}
+		});
+		out.println();
+		out.println("<- staged, verified, and applying - device is rebooting into the new firmware");
+	}
+
+	private static byte[] sha256(byte[] data) throws IOException {
+		try {
+			return MessageDigest.getInstance("SHA-256").digest(data);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IOException("OTA: SHA-256 not available", e);
 		}
 	}
 

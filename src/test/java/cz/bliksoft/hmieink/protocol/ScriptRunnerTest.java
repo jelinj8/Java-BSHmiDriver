@@ -9,10 +9,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import cz.bliksoft.hmieink.protocol.schema.CommandSchema;
 import cz.bliksoft.hmieink.protocol.schema.PayloadCodec;
@@ -30,6 +34,9 @@ class ScriptRunnerTest {
 		public void write(int b) {
 		}
 	});
+
+	@TempDir
+	Path tempDir;
 
 	@Test
 	void sleepBlocksLocallyAndSendsNothingToTheDevice() throws IOException {
@@ -143,6 +150,30 @@ class ScriptRunnerTest {
 		ScriptRunner runner = new ScriptRunner(device, QUIET);
 
 		assertThrows(IllegalArgumentException.class, () -> runner.runLine("LOG_MESSAGE|#not_cached", '|'));
+	}
+
+	@Test
+	void otaReadsFileHashesItAndInstallsWithApplyNow() throws Exception {
+		byte[] firmware = { 1, 2, 3, 4, 5, 6, 7, 8 };
+		Path firmwareFile = tempDir.resolve("firmware.bin");
+		Files.write(firmwareFile, firmware);
+
+		FakeFrameTransport transport = new FakeFrameTransport();
+		transport.setResponder(request -> new Frame(CommandId.ACK, request.getSeq(),
+				new byte[] { (byte) request.getSeq(), 0, 0, Status.OK }));
+		HmiDevice device = new HmiDevice(transport);
+		ScriptRunner runner = new ScriptRunner(device, QUIET);
+
+		runner.runLine("OTA|@" + firmwareFile, '|');
+
+		assertEquals(1, transport.getSent().size());
+		Frame sent = transport.getSent().get(0);
+		assertEquals(CommandId.OTA_INSTALL, sent.getCommandId());
+		Map<String, Object> fields = PayloadCodec.decode(CommandSchema.byId(CommandId.OTA_INSTALL), sent.getPayload());
+		assertArrayEquals(firmware, (byte[]) fields.get("IMAGE_DATA"));
+		assertEquals((long) OtaHashAlgo.SHA256, fields.get("HASH_ALGO"));
+		assertArrayEquals(MessageDigest.getInstance("SHA-256").digest(firmware), (byte[]) fields.get("HASH"));
+		assertEquals((long) OtaInstallFlags.APPLY_NOW, fields.get("FLAGS"));
 	}
 
 	private static void sleepUnchecked(long ms) {

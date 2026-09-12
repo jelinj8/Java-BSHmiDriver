@@ -36,6 +36,17 @@ public interface FrameTransport extends Closeable {
 	 */
 	void setListener(FrameListener listener);
 
+	/**
+	 * Sets a listener that receives byte-level progress during {@link #send} for a
+	 * large payload (e.g. {@code OTA_INSTALL}, {@code FILE_UPLOAD}) - PC-side
+	 * transfer progress only, not a protocol-level chunk acknowledgment (see
+	 * {@link TransferProgressListener}). {@code null} clears it. Default no-op;
+	 * only the stream-based transports (Serial/TCP/BLE, via
+	 * {@code AbstractStreamFrameTransport}) currently report progress.
+	 */
+	default void setProgressListener(TransferProgressListener listener) {
+	}
+
 	boolean isConnected();
 
 	/** Stops the reader and releases the underlying connection. Idempotent. */

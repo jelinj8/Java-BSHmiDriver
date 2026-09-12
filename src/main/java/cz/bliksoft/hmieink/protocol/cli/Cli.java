@@ -7,8 +7,11 @@ import java.util.Locale;
 
 import cz.bliksoft.hmieink.protocol.AuthLevel;
 import cz.bliksoft.hmieink.protocol.Ble;
+import cz.bliksoft.hmieink.protocol.BleFrameTransport;
 import cz.bliksoft.hmieink.protocol.BleHmiDevice;
 import cz.bliksoft.hmieink.protocol.FileHmiDevice;
+import cz.bliksoft.hmieink.protocol.FrameTransport;
+import cz.bliksoft.hmieink.protocol.HandshakeCapabilities;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
 import cz.bliksoft.hmieink.protocol.IconSpecCache;
 import cz.bliksoft.hmieink.protocol.SerialHmiDevice;
@@ -70,13 +73,15 @@ public final class Cli {
 		String adminPin;
 
 		@CommandLine.Option(names = { "-f",
-				"--file" }, description = "read commands from FILE, one per line (also accepts SLEEP|ms and "
-						+ "WAIT_LOG|ms[|marker] and ICONSPEC|name|spec, see ScriptRunner) - repeatable, order-sensitive with -c/-p")
+				"--file" }, description = "read commands from FILE, one per line (also accepts SLEEP|ms, "
+						+ "WAIT_LOG|ms[|marker], ICONSPEC|name|spec, and OTA|@firmware.bin, see ScriptRunner) - "
+						+ "repeatable, order-sensitive with -c/-p")
 		List<String> files = new ArrayList<>();
 
 		@CommandLine.Option(names = { "-c",
-				"--command" }, description = "send one inline command, or SLEEP|ms / WAIT_LOG|ms[|marker] / ICONSPEC|name|spec (local only, "
-						+ "see ScriptRunner) - repeatable, order-sensitive with -f/-p")
+				"--command" }, description = "send one inline command, or SLEEP|ms / WAIT_LOG|ms[|marker] / "
+						+ "ICONSPEC|name|spec / OTA|@firmware.bin (local only, see ScriptRunner) - repeatable, "
+						+ "order-sensitive with -f/-p")
 		List<String> commands = new ArrayList<>();
 
 		@CommandLine.Option(names = { "-p",
@@ -188,8 +193,9 @@ public final class Cli {
 
 				List<BleDeviceResult> found = null;
 				if (opts.address.startsWith("=")) {
-					found = BleUtils.scan(adapter, new ScanFilter().withServiceUuid(Ble.SERVICE_UUID),
-							BLE_SCAN_TIMEOUT_MS, opts.address.substring(1));
+					String exact = opts.address.substring(1);
+					found = exactMatch(BleUtils.scan(adapter, new ScanFilter().withServiceUuid(Ble.SERVICE_UUID),
+							BLE_SCAN_TIMEOUT_MS, exact), exact);
 				} else {
 					found = BleUtils.find(adapter, new ScanFilter().withServiceUuid(Ble.SERVICE_UUID), opts.address,
 							BLE_SCAN_TIMEOUT_MS);
@@ -218,14 +224,28 @@ public final class Cli {
 	 * {@code -k}/{@code -K} if given, else none - since without a real
 	 * HANDSHAKE_REQUEST the new pin flags would have no effect at all
 	 * (doc/PROTOCOL.md §5.3: a connection starts at AuthLevel.NONE until it does).
+	 * Also applies the handshake's negotiated {@code MAX_CHUNK_SIZE} (§5.2) to a
+	 * BLE transport - without this, {@link BleFrameTransport} stays at
+	 * {@link Ble#DEFAULT_MAX_CHUNK_SIZE} (20 bytes) for the whole session, which is
+	 * dramatically slower than the device's real negotiated ATT MTU allows
+	 * (confirmed on real hardware: a multi-hundred-KB transfer at the 20-byte
+	 * default measured well under 200 bytes/sec).
 	 */
 	private static void handshake(HmiDevice device, Options opts) throws IOException {
+		HandshakeCapabilities capabilities;
 		if (opts.adminPin != null) {
-			device.handshake(AuthLevel.ADMIN, opts.adminPin);
+			capabilities = device.handshake(AuthLevel.ADMIN, opts.adminPin);
 		} else if (opts.usagePin != null) {
-			device.handshake(AuthLevel.USAGE, opts.usagePin);
+			capabilities = device.handshake(AuthLevel.USAGE, opts.usagePin);
 		} else {
-			device.handshake();
+			capabilities = device.handshake();
+		}
+		FrameTransport transport = device.getCommandClient().getTransport();
+		if (transport instanceof BleFrameTransport) {
+			int maxChunkSize = capabilities.getMaxChunkSize();
+			if (maxChunkSize > 0) {
+				((BleFrameTransport) transport).setMaxChunkSize(maxChunkSize);
+			}
 		}
 	}
 
@@ -318,6 +338,44 @@ public final class Cli {
 			System.out.printf("%-17s %s%n", device.getAddress(),
 					device.getName() != null ? device.getName() : "(no name)");
 		}
+	}
+
+	/**
+	 * Narrows a {@code BleUtils.scan(..., match)} result down to the exact
+	 * address/name match it was supposed to guarantee.
+	 *
+	 * <p>
+	 * {@code scan(..., match)} only stops early and returns just the match when
+	 * that peripheral is actually seen before the scan timeout elapses; if the
+	 * timeout is reached first, it silently falls back to returning every other
+	 * device it happened to discover along the way, instead of an empty list. The
+	 * {@code "=<address>"} selector must never let a command run against a device
+	 * other than the one requested (confirmed on real hardware: an OTA targeting
+	 * {@code =30:ED:A0:A5:A3:65} was instead sent to an unrelated device that just
+	 * happened to answer the scan first), so re-filter here and fail closed if the
+	 * exact match isn't present.
+	 *
+	 * @param found    the raw result of {@code BleUtils.scan(..., selector)}
+	 * @param selector the exact address or name that was requested (without the
+	 *                 leading {@code =})
+	 * @return only the entries matching {@code selector} exactly (case insensitive)
+	 * @throws IOException if none of {@code found} matches {@code selector} exactly
+	 */
+	private static List<BleDeviceResult> exactMatch(List<BleDeviceResult> found, String selector) throws IOException {
+		String normalized = selector.toUpperCase(Locale.ROOT).trim();
+		List<BleDeviceResult> matches = new ArrayList<>();
+		for (BleDeviceResult device : found) {
+			String address = device.getAddress().toUpperCase(Locale.ROOT).trim();
+			String name = device.getName() != null ? device.getName().toUpperCase(Locale.ROOT).trim() : null;
+			if (normalized.equals(address) || normalized.equals(name)) {
+				matches.add(device);
+			}
+		}
+		if (matches.isEmpty()) {
+			throw new IOException("no device with address or name \"" + selector + "\" found advertising service "
+					+ Ble.SERVICE_UUID + " within " + BLE_SCAN_TIMEOUT_MS + "ms");
+		}
+		return matches;
 	}
 
 	/**

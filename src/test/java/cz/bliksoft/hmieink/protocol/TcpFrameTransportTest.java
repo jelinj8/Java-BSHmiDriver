@@ -11,6 +11,8 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -75,6 +77,41 @@ class TcpFrameTransportTest {
 					assertEquals(expectedSeq, f.getSeq());
 				}
 			} finally {
+				client.close();
+			}
+		}
+	}
+
+	@Test
+	void progressListenerReportsMonotonicByteCountsForALargePayload() throws Exception {
+		try (FakeDeviceServer server = FakeDeviceServer.start()) {
+			TcpFrameTransport client = new TcpFrameTransport("127.0.0.1", server.port());
+			client.connect();
+			try {
+				byte[] largePayload = new byte[20_000];
+				for (int i = 0; i < largePayload.length; i++) {
+					largePayload[i] = (byte) i;
+				}
+				Frame frame = new Frame(CommandId.FULL_IMAGE_TRANSFER, 1, largePayload);
+				long expectedTotal = frame.encode().length;
+
+				List<long[]> updates = new ArrayList<>();
+				client.setProgressListener((sent, total) -> updates.add(new long[] { sent, total }));
+				client.send(frame);
+
+				byte[] received = server.awaitFrameBytes();
+				assertArrayEquals(frame.encode(), received, "chunked write must not change the wire bytes");
+
+				assertTrue(!updates.isEmpty(), "expected at least one progress update");
+				long lastSent = 0;
+				for (long[] update : updates) {
+					assertTrue(update[0] > lastSent, "bytesSent must strictly increase");
+					assertEquals(expectedTotal, update[1], "totalBytes must stay constant across updates");
+					lastSent = update[0];
+				}
+				assertEquals(expectedTotal, lastSent, "final update must report the full length sent");
+			} finally {
+				client.setProgressListener(null);
 				client.close();
 			}
 		}

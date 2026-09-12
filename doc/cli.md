@@ -57,6 +57,13 @@ For BLE connections, include BSToolbox-BLE (and its dependencies) on the classpa
 java -jar bshmidriver-cli.jar -cp <path/to/bstoolbox-ble.jar> -t ble -a "*" -c "FAST_CLEAR|WHITE|0"
 ```
 
+`-a` for `-t ble` also accepts `"1"` (the single device found, error if zero or more than one),
+`"<name/address substring>"` or a comma-separated list of those, and `"=<exact address/name>"` for
+a fast, unambiguous connection to a known device. `=<exact address/name>` fails closed: if that
+exact device isn't seen within the scan window, the CLI errors out rather than running the command
+against some other, unrelated device that happened to answer the scan instead - important for a
+command like `OTA`, since sending it to the wrong device means reflashing the wrong hardware.
+
 **File (record/replay):**
 ```bash
 java -jar bshmidriver-cli.jar -t file -a mycommands.macro -c "FAST_CLEAR|WHITE|0"
@@ -250,6 +257,41 @@ DRAW_IMAGE_DATA|10|10|REPLACE|REFRESH_NOW|#logo
 ICONSPEC|logo|<icon spec string>
 FILE_UPLOAD|SD|/logo.epi|#logo
 DRAW_IMAGE|10|10|REPLACE|REFRESH_NOW|SD|/logo.epi
+```
+
+### `OTA`
+
+Installs a firmware update in one command - reads the given `firmware.bin`, SHA-256-hashes it, and
+sends it via `OTA_INSTALL` (doc/PROTOCOL.md §16.1) with `APPLY_NOW` set, so the device verifies the
+hash, writes it to the inactive OTA partition, and reboots into it as part of this one line:
+
+```
+OTA|@<firmware_file>
+```
+
+The `@` is the same `BYTES`-field file convention used everywhere else (`FILE_UPLOAD`'s `DATA`,
+etc.) - not OTA-specific syntax; `#<name>` (an `ICONSPEC`-cached blob) or a literal token would also
+resolve, though neither makes sense for a firmware image in practice.
+
+A firmware image can be hundreds of KB to a few MB, so this can take minutes over a slow transport
+(Serial at 115200 baud, or BLE with its per-packet ACK overhead) - the timeout scales with image
+size rather than using a fixed value, and the CLI prints a live `sending... N%` line as it goes
+(PC-side transfer progress only - `OTA_INSTALL` is one logical frame on the wire, doc/PROTOCOL.md
+§16, so this isn't a protocol-level per-chunk acknowledgment). After the reboot, the device comes
+back up on the new image
+with `OTA_STATUS_RESPONSE.PENDING_VERIFICATION=1` until an explicit `OTA_CONFIRM` cancels the
+firmware's own auto-rollback safety net (doc/PROTOCOL.md §16.4) - `OTA` itself only installs and
+applies; confirming (or rolling back) the new firmware is a separate step, e.g.:
+
+```
+OTA|@./firmware.bin
+SLEEP|13000
+OTA_CONFIRM
+```
+
+**Example:**
+```bash
+./hmi-cli.sh -t ble -a "=30:ED:A0:A5:A3:65" -c "OTA|@./firmware.bin"
 ```
 
 ## Full Command Catalog

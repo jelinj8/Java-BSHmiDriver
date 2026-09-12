@@ -135,6 +135,15 @@ public final class CommandClient implements Closeable {
 		eventListeners.remove(listener);
 	}
 
+	/**
+	 * Escape hatch for anything not wrapped by this class - e.g.
+	 * {@link HmiDevice#otaInstall(byte[], int, byte[], boolean, long, TransferProgressListener)}
+	 * uses this to set a transfer-progress listener before a long send.
+	 */
+	public FrameTransport getTransport() {
+		return transport;
+	}
+
 	public boolean isConnected() {
 		return transport.isConnected();
 	}

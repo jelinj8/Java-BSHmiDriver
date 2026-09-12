@@ -148,7 +148,17 @@ public final class TextCommandFormat {
 		}
 	}
 
-	private static byte[] parseBytesToken(String token) {
+	/**
+	 * Resolves one {@code BYTES}-field token: {@code @<file>} reads raw bytes from
+	 * a file, {@code #<name>} resolves an {@link IconSpecCache} entry, anything
+	 * else is taken as literal UTF-8 text. Exposed publicly (beyond
+	 * {@link #parse}'s own use) so other line-oriented consumers of this same
+	 * grammar (e.g. {@code ScriptRunner}'s {@code OTA} pseudo-command) can reuse
+	 * the exact same {@code @}/{@code #} resolution rather than reimplementing it -
+	 * {@link #tokenize} already gives {@code @}/{@code #}-prefixed tokens the same
+	 * raw (no backslash-escape processing) treatment for exactly this reason.
+	 */
+	public static byte[] parseBytesToken(String token) {
 		if (token.startsWith("@")) {
 			try {
 				return Files.readAllBytes(Paths.get(token.substring(1)));

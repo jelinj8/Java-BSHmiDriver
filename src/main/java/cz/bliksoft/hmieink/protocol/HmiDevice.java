@@ -562,6 +562,38 @@ public class HmiDevice implements Closeable {
 				"FLAGS", (long) (applyNow ? OtaInstallFlags.APPLY_NOW : 0), "IMAGE_DATA", imageData));
 	}
 
+	/**
+	 * Timeout-overriding form of {@link #otaInstall} - a firmware image can be
+	 * hundreds of KB to a few MB, which over Serial/BLE can genuinely take minutes
+	 * (doc/PROTOCOL.md §16.1's own manual check budgets ~180s for a ~1MB image at
+	 * 115200 baud) - see {@link #fileList(int, String, long)} for the same
+	 * reasoning applied to a much smaller transfer.
+	 */
+	public void otaInstall(byte[] imageData, int hashAlgo, byte[] hash, boolean applyNow, long timeoutMillis)
+			throws IOException {
+		send(CommandId.OTA_INSTALL, fields("HASH_ALGO", (long) hashAlgo, "HASH", hash != null ? hash : new byte[0],
+				"FLAGS", (long) (applyNow ? OtaInstallFlags.APPLY_NOW : 0), "IMAGE_DATA", imageData), timeoutMillis);
+	}
+
+	/**
+	 * Progress-reporting form of
+	 * {@link #otaInstall(byte[], int, byte[], boolean, long)} - {@code progress} is
+	 * PC-side-only transfer instrumentation (see {@link TransferProgressListener}),
+	 * not a protocol-level chunk acknowledgment; the wire bytes sent are identical
+	 * either way. Always clears the listener afterward so it doesn't leak into
+	 * unrelated later sends on the same connection.
+	 */
+	public void otaInstall(byte[] imageData, int hashAlgo, byte[] hash, boolean applyNow, long timeoutMillis,
+			TransferProgressListener progress) throws IOException {
+		FrameTransport transport = commandClient.getTransport();
+		transport.setProgressListener(progress);
+		try {
+			otaInstall(imageData, hashAlgo, hash, applyNow, timeoutMillis);
+		} finally {
+			transport.setProgressListener(null);
+		}
+	}
+
 	public void otaApply() throws IOException {
 		send(CommandId.OTA_APPLY, fields());
 	}
