@@ -1,6 +1,5 @@
 package cz.bliksoft.hmieink.protocol.manual;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -12,7 +11,6 @@ import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.CommandNackException;
 import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.OtaHashAlgo;
-import cz.bliksoft.hmieink.protocol.OtaInstallFlags;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Status;
 

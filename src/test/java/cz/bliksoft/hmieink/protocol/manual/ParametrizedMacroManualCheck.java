@@ -12,7 +12,7 @@ import cz.bliksoft.hmieink.protocol.CommandNackException;
 import cz.bliksoft.hmieink.protocol.DrawMode;
 import cz.bliksoft.hmieink.protocol.DrawTextFlags;
 import cz.bliksoft.hmieink.protocol.Frame;
-import cz.bliksoft.hmieink.protocol.MacroCodec;
+import cz.bliksoft.hmieink.macro.MacroCodec;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.TextAlign;
 import cz.bliksoft.hmieink.protocol.TextBackground;

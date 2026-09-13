@@ -14,7 +14,7 @@ import java.util.function.Function;
  * deterministically exercises the same code path a real async transport would,
  * without any test-thread timing.
  */
-final class FakeFrameTransport implements FrameTransport {
+public final class FakeFrameTransport implements FrameTransport {
 
 	private final List<Frame> sent = new ArrayList<>();
 	private FrameListener listener;
@@ -23,7 +23,7 @@ final class FakeFrameTransport implements FrameTransport {
 	private int connectFailuresRemaining;
 	private int connectAttempts;
 
-	List<Frame> getSent() {
+	public List<Frame> getSent() {
 		return sent;
 	}
 
@@ -32,11 +32,11 @@ final class FakeFrameTransport implements FrameTransport {
 	 * {@link IOException} before succeeding - for exercising retry logic (e.g.
 	 * {@link HmiDevice#reconnect}) without any real I/O.
 	 */
-	void failConnectTimes(int times) {
+	public void failConnectTimes(int times) {
 		this.connectFailuresRemaining = times;
 	}
 
-	int getConnectAttempts() {
+	public int getConnectAttempts() {
 		return connectAttempts;
 	}
 
@@ -44,7 +44,7 @@ final class FakeFrameTransport implements FrameTransport {
 	 * Installs a function computing the (possibly null, meaning "no response")
 	 * reply to each sent request.
 	 */
-	void setResponder(Function<Frame, Frame> responder) {
+	public void setResponder(Function<Frame, Frame> responder) {
 		this.responder = responder;
 	}
 
@@ -52,7 +52,7 @@ final class FakeFrameTransport implements FrameTransport {
 	 * Delivers a frame to the installed listener without it being a response to any
 	 * send() - simulates a device-pushed event.
 	 */
-	void pushUnsolicited(Frame frame) {
+	public void pushUnsolicited(Frame frame) {
 		if (listener != null) {
 			listener.onFrame(frame);
 		}

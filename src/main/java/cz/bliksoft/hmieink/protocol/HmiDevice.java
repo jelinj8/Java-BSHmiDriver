@@ -12,9 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import cz.bliksoft.hmieink.image.EpiImageCodec;
+import cz.bliksoft.hmieink.image.IconSpecCache;
 import cz.bliksoft.hmieink.protocol.schema.CommandSchema;
 import cz.bliksoft.hmieink.protocol.schema.PayloadCodec;
-import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
+import cz.bliksoft.hmieink.text.TextCommandFormat;
 
 /**
  * High-level device-client facade (plan.md Phase 5) tying together a transport,
@@ -486,8 +488,8 @@ public class HmiDevice implements Closeable {
 	 * (hundreds of entries) on real SD hardware can genuinely take longer than
 	 * {@link CommandClient#DEFAULT_TIMEOUT_MILLIS}, since every {@code VOLUME=SD}
 	 * operation walks the FAT directory over SPI (§14);
-	 * {@link cz.bliksoft.hmieink.protocol.sync.FolderSync} uses this for exactly
-	 * that reason.
+	 * {@link cz.bliksoft.hmieink.sync.FolderSync} uses this for exactly that
+	 * reason.
 	 */
 	public Map<String, Object> fileList(int volume, String path, long timeoutMillis) throws IOException {
 		return sendAndDecode(CommandId.FILE_LIST_REQUEST, CommandId.FILE_LIST_RESPONSE,

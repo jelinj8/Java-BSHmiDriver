@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import cz.bliksoft.hmieink.macro.MacroCodec;
+
 class FileFrameTransportTest {
 
 	@TempDir

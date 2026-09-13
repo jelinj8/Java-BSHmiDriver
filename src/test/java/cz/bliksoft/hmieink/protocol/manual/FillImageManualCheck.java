@@ -9,7 +9,7 @@ import cz.bliksoft.hmieink.protocol.CommandClient;
 import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.CommandNackException;
 import cz.bliksoft.hmieink.protocol.DrawMode;
-import cz.bliksoft.hmieink.protocol.EpiImageCodec;
+import cz.bliksoft.hmieink.image.EpiImageCodec;
 import cz.bliksoft.hmieink.protocol.FillTileMode;
 import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;

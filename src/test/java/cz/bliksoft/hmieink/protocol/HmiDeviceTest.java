@@ -12,7 +12,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
+import cz.bliksoft.hmieink.macro.MacroCodec;
+import cz.bliksoft.hmieink.text.TextCommandFormat;
 
 class HmiDeviceTest {
 

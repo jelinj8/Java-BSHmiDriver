@@ -8,9 +8,9 @@ import java.nio.file.Path;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.SerialHmiDevice;
 import cz.bliksoft.hmieink.protocol.Volume;
-import cz.bliksoft.hmieink.protocol.sync.FolderSync;
-import cz.bliksoft.hmieink.protocol.sync.SyncMode;
-import cz.bliksoft.hmieink.protocol.sync.SyncResult;
+import cz.bliksoft.hmieink.sync.FolderSync;
+import cz.bliksoft.hmieink.sync.SyncMode;
+import cz.bliksoft.hmieink.sync.SyncResult;
 
 /**
  * Manual, real-hardware verification of {@link FolderSync} end-to-end - the

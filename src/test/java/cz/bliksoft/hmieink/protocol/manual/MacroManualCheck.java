@@ -12,7 +12,7 @@ import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.CommandNackException;
 import cz.bliksoft.hmieink.protocol.DrawMode;
 import cz.bliksoft.hmieink.protocol.Frame;
-import cz.bliksoft.hmieink.protocol.MacroCodec;
+import cz.bliksoft.hmieink.macro.MacroCodec;
 import cz.bliksoft.hmieink.protocol.ReadScreenMode;
 import cz.bliksoft.hmieink.protocol.ReadScreenSource;
 import cz.bliksoft.hmieink.protocol.RlePackBits;

@@ -22,16 +22,16 @@ import cz.bliksoft.hmieink.protocol.Volume;
 import cz.bliksoft.hmieink.protocol.WriteFlags;
 
 /**
- * Manual, real-hardware verification of DRAW_TEXT's
- * FLAGS.MISSING_FILE_TOLERANT bit (doc/PROTOCOL.md §12.6, only meaningful
- * together with TEXT_IS_PATH): a TEXT_IS_PATH draw referencing a path that
- * doesn't exist should NACK(FILE_NOT_FOUND) when the tolerant bit is unset
- * (today's existing behavior - a positive control, since this bit is new),
- * and ACK with nothing drawn when the tolerant bit is set. A third, genuinely
- * positive control (TEXT_IS_PATH against a file that *does* exist) proves the
- * READ_SCREEN pixel check used to confirm "nothing drawn" actually detects a
- * real draw when one happens, rather than always reading back blank. NOT part
- * of the automated {@code mvn test} suite - run it directly:
+ * Manual, real-hardware verification of DRAW_TEXT's FLAGS.MISSING_FILE_TOLERANT
+ * bit (doc/PROTOCOL.md §12.6, only meaningful together with TEXT_IS_PATH): a
+ * TEXT_IS_PATH draw referencing a path that doesn't exist should
+ * NACK(FILE_NOT_FOUND) when the tolerant bit is unset (today's existing
+ * behavior - a positive control, since this bit is new), and ACK with nothing
+ * drawn when the tolerant bit is set. A third, genuinely positive control
+ * (TEXT_IS_PATH against a file that *does* exist) proves the READ_SCREEN pixel
+ * check used to confirm "nothing drawn" actually detects a real draw when one
+ * happens, rather than always reading back blank. NOT part of the automated
+ * {@code mvn test} suite - run it directly:
  *
  * <pre>
  * java -cp target/classes;target/test-classes;&lt;jserialcomm jar&gt; \
@@ -145,12 +145,13 @@ public final class MissingFileToleranceManualCheck {
 		return payload.array();
 	}
 
-	private static void drawTextByPath(CommandClient client, int y, String pathWithPrefix, int flags)
-			throws Exception {
+	private static void drawTextByPath(CommandClient client, int y, String pathWithPrefix, int flags) throws Exception {
 		send(client, CommandId.DRAW_TEXT, drawTextPayload(y, pathWithPrefix, flags));
 	}
 
-	/** Returns any pixel in the X/y region is black, i.e. something was drawn there. */
+	/**
+	 * Returns any pixel in the X/y region is black, i.e. something was drawn there.
+	 */
 	private static boolean isAnyBlack(CommandClient client, int y) throws Exception {
 		ByteBuffer payload = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
 		payload.put((byte) ReadScreenSource.PANEL);
@@ -197,7 +198,10 @@ public final class MissingFileToleranceManualCheck {
 		}
 	}
 
-	/** Like {@link #send}, but expects (and returns the status of) a NACK rather than treating one as failure. */
+	/**
+	 * Like {@link #send}, but expects (and returns the status of) a NACK rather
+	 * than treating one as failure.
+	 */
 	private static int sendExpectNack(CommandClient client, byte[] payload) throws Exception {
 		try {
 			Frame response = client.send(CommandId.DRAW_TEXT, payload);

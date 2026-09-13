@@ -8,9 +8,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import cz.bliksoft.hmieink.protocol.font.BdfFont;
-import cz.bliksoft.hmieink.protocol.font.Codepages;
-import cz.bliksoft.hmieink.protocol.font.GlyphGenerator;
+import cz.bliksoft.hmieink.font.BdfFont;
+import cz.bliksoft.hmieink.font.Codepages;
+import cz.bliksoft.hmieink.font.GlyphGenerator;
 
 /**
  * Generates the initial custom-font (DRAW_TEXT FONT_ID=0xFF, doc/PROTOCOL.md

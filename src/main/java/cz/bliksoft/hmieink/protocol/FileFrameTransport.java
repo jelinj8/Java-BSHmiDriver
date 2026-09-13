@@ -7,6 +7,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import cz.bliksoft.hmieink.macro.MacroCodec;
+
 /**
  * A local-file "transport": instead of talking to a live device, every
  * {@link #send} is recorded as a {@link MacroCodec.Entry} and {@link #close()}

@@ -16,27 +16,49 @@ from there, not duplicated here.
 
 ## Package layout
 
-Package `cz.bliksoft.hmieink.protocol` (unchanged from this library's original name,
-`bshmiprotocol` — only the Maven `artifactId` was renamed to `bshmidriver`; the groupId/package
-were deliberately left alone, to avoid an unnecessary breaking rename):
+`cz.bliksoft.hmieink.protocol` (unchanged from this library's original name, `bshmiprotocol` — only
+the Maven `artifactId` was renamed to `bshmidriver`; the groupId/package were deliberately left
+alone, to avoid an unnecessary breaking rename) holds **only** wire-protocol *definitions* — frame
+envelope, transports, command dispatch, field-layout enums, TLV/handshake codec. Everything else —
+the CLI, the integration entry point, and every PC-side tooling concern built on top of the protocol
+(text notation, folder sync, script execution, image/font/macro file formats) — lives in top-level
+siblings of `cz.bliksoft.hmieink`:
 
-- `cz.bliksoft.hmieink.protocol` — frame envelope (`Frame`, `Crc16`, `RlePackBits`),
+- `cz.bliksoft.hmieink` — `Cli`, the command-line front end, and `HmiUtils`, an integration entry
+  point collapsing per-transport connect+handshake boilerplate (one nested static class per
+  transport — `HmiUtils.Serial`/`.Tcp`/`.File`/`.Ble` — mirroring `HmiDevice`'s own
+  subclass-per-transport isolation so e.g. calling `HmiUtils.Tcp.connect(...)` never forces
+  jSerialComm/BSToolbox-BLE onto a TCP-only consumer's classpath; JVM class verification resolves
+  every type any method of a class references as soon as that class loads, so this split — not a
+  single flat class — is what actually preserves the isolation). `HmiUtils.Ble` also holds the BLE
+  device-selector logic (`resolveDevice` for a single-match selector: `*`/`1`/substring/comma-list;
+  `resolveExact` for the `=<exact>` selector, which can legitimately return several matches).
+- `cz.bliksoft.hmieink.protocol` — frame envelope (`Frame`, `Crc16`, `RlePackBits` — RLE is real
+  IMAGE_TRANSFER wire-payload encoding, doc/PROTOCOL.md §6, not just a file-format helper),
   `CommandClient` (SEQ assignment, ACK/NACK correlation, timeout+retry, event listeners,
   `LOG_MESSAGE` wait helpers), transports (`SerialFrameTransport`, `TcpFrameTransport`,
   `BleFrameTransport`, `FileFrameTransport`), `HmiDevice` and its transport-specific subclasses
-  (`SerialHmiDevice`, `TcpHmiDevice`, `BleHmiDevice`, `FileHmiDevice`), `MacroCodec`,
-  `EpiImageCodec`.
+  (`SerialHmiDevice`, `TcpHmiDevice`, `BleHmiDevice`, `FileHmiDevice`), `HandshakeCapabilities`,
+  `AuthLevel`, `Tlv`/`TlvCodec`, and the ~30 single-purpose field enums (`Color`, `DrawMode`,
+  `Volume`, `GpioMode`, `WriteFlags`, etc.), each mirroring one wire field/flags byte.
 - `cz.bliksoft.hmieink.protocol.schema` — `CommandSchema` (the declarative, single-source-of-truth
-  field layout for every command), `PayloadCodec`, `FieldSpec`.
-- `cz.bliksoft.hmieink.protocol.text` — `TextCommandFormat` (bidirectional
-  `NAME|field|field|...` textual command notation, schema-driven).
-- `cz.bliksoft.hmieink.protocol.cli` — `Cli`, the command-line front end.
-- `cz.bliksoft.hmieink.protocol.script` — `ScriptRunner`, the shared engine behind the CLI's
-  `-f`/`-c`/`-p` flags and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`, `SYNC`, `ICONSPEC`).
-  `ScriptRunner` uses `IconSpecCache` for icon spec processing, which requires the
-  `common-java-utils` library.
-- `cz.bliksoft.hmieink.protocol.sync` — `FolderSync`, recursive local-folder-vs-device-storage
-  sync (PC-master/device-master/merge modes, all three volumes) built entirely on existing FILE_*
+  field layout for every command), `PayloadCodec` (the wire-encoding engine itself — encodes/decodes
+  a command's payload bytes in exact wire order, deliberately agnostic of symbolic-name resolution,
+  which is `.text`'s job), `FieldSpec`.
+- `cz.bliksoft.hmieink.image` — `EpiImageCodec` (encoder/decoder for the `.epi` PC-side image file
+  format staged before `FILE_UPLOAD`/`DRAW_IMAGE_DATA`, doc/PROTOCOL.md §12.7) and `IconSpecCache`
+  (icon-spec-to-`.epi` rendering cache built on it, requiring the optional `common-java-utils`
+  library).
+- `cz.bliksoft.hmieink.macro` — `MacroCodec`, encoder/decoder for the `.macro` file format (a PC-side
+  hand-authoring/recording convenience — the wire-relevant shape is the real
+  RECORD_MACRO/SAVE_MACRO/PLAY_MACRO commands in `protocol`, not this file format).
+- `cz.bliksoft.hmieink.text` — `TextCommandFormat` (bidirectional `NAME|field|field|...` textual
+  command notation, schema-driven).
+- `cz.bliksoft.hmieink.script` — `ScriptRunner`, the shared engine behind the CLI's `-f`/`-c`/`-p`
+  flags and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`, `SYNC`, `ICONSPEC`). Uses `IconSpecCache`
+  for icon spec processing, which requires the `common-java-utils` library.
+- `cz.bliksoft.hmieink.sync` — `FolderSync`, recursive local-folder-vs-device-storage sync
+  (PC-master/device-master/merge modes, all three volumes) built entirely on existing FILE_*
   commands - no protocol changes of its own. `RemoteFileStore` decouples the sync algorithm from
   the wire protocol for unit testing (`HmiDeviceRemoteFileStore` is the real, `HmiDevice`-backed
   implementation, using `HmiDevice`'s timeout-overriding file-method overloads with a generous 30s
@@ -44,11 +66,12 @@ were deliberately left alone, to avoid an unnecessary breaking rename):
   bulk transfer, confirmed against a real ~220-file glyph set); `SyncManifest` tracks per-path
   content hashes for MERGE mode's change detection, since device storage has no timestamps to
   compare against. Exposed from the CLI as the `SYNC` pseudo-command (`ScriptRunner`).
-- `cz.bliksoft.hmieink.protocol.font` — `GlyphGenerator`, rasterizes a TTF/system `Font` into the
+- `cz.bliksoft.hmieink.font` — `GlyphGenerator`, rasterizes a TTF/system `Font` into the
   custom-font `.gly` glyph set `DRAW_TEXT FONT_ID=0xFF` consumes (firmware's doc/PROTOCOL.md
   §12.6.1), via plain `java.awt.Font`/`Graphics2D` (not BSToolbox's `IconSpecEngine`, a UI
   icon-compositing DSL with no TTF-rasterization support). `Codepages` builds byte-to-Unicode maps
-  for single-byte charsets (e.g. CP1250) from the JDK's own `Charset`.
+  for single-byte charsets (e.g. CP1250) from the JDK's own `Charset`. `BdfFont` parses BDF bitmap
+  fonts (e.g. Terminus).
 
 ## Build / test commands
 
@@ -95,7 +118,7 @@ containing:
   `common-java-utils` dependency also enables SVG processing and QR code generation for icon
   specs, but these are optional features — consumers who don't use `ICONSPEC` don't need them.
 - `hmi-cli.sh` / `hmi-cli.bat` / `hmi-cli.command` — self-locating launch scripts (`java -cp <dir>/bshmidriver-cli.jar;<dir>/lib/*
-  cz.bliksoft.hmieink.protocol.cli.Cli "$@"`); pass all CLI args through unchanged. Note: no
+  cz.bliksoft.hmieink.Cli "$@"`); pass all CLI args through unchanged. Note: no
   manifest `Class-Path`/`addClasspath` is used here — that maven-jar-plugin feature silently omits
   `provided`-scope deps, which all three of the above are.
 

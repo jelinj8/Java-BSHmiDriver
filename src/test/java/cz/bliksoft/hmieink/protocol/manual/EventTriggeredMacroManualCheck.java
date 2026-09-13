@@ -11,7 +11,7 @@ import cz.bliksoft.hmieink.protocol.CommandClient;
 import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.CommandNackException;
 import cz.bliksoft.hmieink.protocol.Frame;
-import cz.bliksoft.hmieink.protocol.MacroCodec;
+import cz.bliksoft.hmieink.macro.MacroCodec;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 
@@ -44,7 +44,6 @@ import cz.bliksoft.hmieink.protocol.Volume;
  */
 public final class EventTriggeredMacroManualCheck {
 
-	private static final int BOOT_BUTTON_ID = 0x04;
 	private static final String SHORT_PRESS_PATH = "/on_button_4_shortpress.macro";
 	private static final String PRESS_PATH = "/on_button_4_press.macro";
 	private static final String RELEASE_PATH = "/on_button_4_release.macro";

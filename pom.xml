@@ -136,7 +136,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>cz.bliksoft.hmieink.protocol.cli.Cli</mainClass>
+							<mainClass>cz.bliksoft.hmieink.Cli</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

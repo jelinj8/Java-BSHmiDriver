@@ -11,7 +11,7 @@ import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.CommandNackException;
 import cz.bliksoft.hmieink.protocol.DrawImageFlags;
 import cz.bliksoft.hmieink.protocol.DrawMode;
-import cz.bliksoft.hmieink.protocol.EpiImageCodec;
+import cz.bliksoft.hmieink.image.EpiImageCodec;
 import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;

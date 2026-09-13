@@ -28,20 +28,28 @@ independent implementations of that one spec, kept in lockstep by convention.
 
 ## Modules
 
-- **Frame envelope** (`Frame`, `Crc16`, `RlePackBits`) — the wire format itself.
-- **`CommandClient`** — SEQ assignment, ACK/NACK-vs-direct-response correlation, timeout+retry, an
-  event-listener hook for unsolicited `BUTTON_EVENT`/`GPIO_EVENT`/`LOG_MESSAGE` frames.
-- **`CommandSchema`** — a declarative, single-source-of-truth field layout for every command
-  (covering the full ~50-command catalog), driving `PayloadCodec` (byte[] ↔ field map),
-  `TextCommandFormat` (bidirectional textual notation), and `HmiDevice`'s typed methods, so none of
-  these duplicate the wire layout by hand.
-- **`HmiDevice`** and its transport-specific subclasses (`SerialHmiDevice`/`TcpHmiDevice`/
+`cz.bliksoft.hmieink.protocol` holds only wire-protocol definitions; everything built on top of it —
+the CLI, the integration entry point, and PC-side tooling — lives in top-level siblings.
+
+- **`cz.bliksoft.hmieink.protocol`** — the wire format itself: frame envelope (`Frame`, `Crc16`,
+  `RlePackBits`), `CommandClient` (SEQ assignment, ACK/NACK-vs-direct-response correlation,
+  timeout+retry, an event-listener hook for unsolicited `BUTTON_EVENT`/`GPIO_EVENT`/`LOG_MESSAGE`
+  frames), and `HmiDevice` with its transport-specific subclasses (`SerialHmiDevice`/`TcpHmiDevice`/
   `BleHmiDevice`/`FileHmiDevice`) — a high-level, typed API (one method per command), never
   referencing a transport's own dependency directly so a consumer only pulls in what it uses.
-- **`Cli`** — a command-line front end: `-t`/`-a` transport selection, `-f`/`-c`/`-p` (file/inline/
-  piped commands, order-preserving), a plaintext command notation (`NAME|field|field|...`,
-  escaping, `@file` for raw-byte fields), and PC-local pseudo-commands (`SLEEP`, `WAIT_LOG`,
-  `SYNC`, `ICONSPEC`) via `ScriptRunner`.
+- **`cz.bliksoft.hmieink.protocol.schema`** — `CommandSchema`, a declarative, single-source-of-truth
+  field layout for every command (covering the full ~50-command catalog), driving `PayloadCodec`
+  (byte[] ↔ field map) and `TextCommandFormat` (bidirectional textual notation), so neither
+  duplicates the wire layout by hand.
+- **`cz.bliksoft.hmieink`** — `Cli`, a command-line front end: `-t`/`-a` transport selection,
+  `-f`/`-c`/`-p` (file/inline/piped commands, order-preserving), a plaintext command notation
+  (`NAME|field|field|...`, escaping, `@file` for raw-byte fields), and PC-local pseudo-commands
+  (`SLEEP`, `WAIT_LOG`, `SYNC`, `ICONSPEC`) via `ScriptRunner`. Also `HmiUtils`, the integration
+  entry point (see below).
+- **`cz.bliksoft.hmieink.text`**, **`.script`**, **`.sync`**, **`.font`**, **`.image`**,
+  **`.macro`** — PC-side tooling built on top of the protocol (text notation, script execution,
+  folder sync, font rasterization, `.epi`/`.macro` file codecs) — see CLAUDE.md's package-layout
+  section for the full breakdown.
 
 ## Usage
 
@@ -54,12 +62,16 @@ See `doc/cli.md` for comprehensive CLI documentation including:
 ### Java API
 
 ```java
-try (SerialHmiDevice device = new SerialHmiDevice("COM5")) {
-    device.connect();
+try (SerialHmiDevice device = HmiUtils.Serial.connectAndHandshake("COM5", null, null)) {
     device.fastClear(Color.WHITE, 0);
     device.drawRect(10, 10, 100, 60, Color.BLACK, DrawMode.REPLACE, true, 2, WriteFlags.REFRESH_NOW);
 }
 ```
+
+`HmiUtils` (`cz.bliksoft.hmieink.HmiUtils`) is the integration entry point for connecting and
+handshaking without hand-rolling that sequence yourself — one nested class per transport
+(`HmiUtils.Serial`/`.Tcp`/`.File`/`.Ble`), so using only one transport never pulls the others'
+`provided` dependencies onto your classpath.
 
 ### CLI
 

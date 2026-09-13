@@ -13,7 +13,7 @@ import cz.bliksoft.hmieink.protocol.CommandClient;
 import cz.bliksoft.hmieink.protocol.CommandEventListener;
 import cz.bliksoft.hmieink.protocol.CommandId;
 import cz.bliksoft.hmieink.protocol.CommandNackException;
-import cz.bliksoft.hmieink.protocol.MacroCodec;
+import cz.bliksoft.hmieink.macro.MacroCodec;
 import cz.bliksoft.hmieink.protocol.SerialFrameTransport;
 import cz.bliksoft.hmieink.protocol.Volume;
 

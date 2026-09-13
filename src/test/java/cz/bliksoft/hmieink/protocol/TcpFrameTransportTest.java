@@ -186,11 +186,12 @@ class TcpFrameTransportTest {
 			return reader.readFrame().encode();
 		}
 
-		void reply(Frame frame) throws IOException {
+		void reply(Frame frame) throws IOException, InterruptedException {
 			replyRaw(frame.encode());
 		}
 
-		void replyRaw(byte[] wireBytes) throws IOException {
+		void replyRaw(byte[] wireBytes) throws IOException, InterruptedException {
+			acceptedLatch.await(5, TimeUnit.SECONDS);
 			out.write(wireBytes);
 			out.flush();
 		}
