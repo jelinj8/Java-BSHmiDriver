@@ -17,4 +17,11 @@ public final class DrawTextFlags {
 	 * draw.
 	 */
 	public static final int TEXT_IS_PATH = 1 << 2;
+
+	/**
+	 * Only meaningful together with {@link #TEXT_IS_PATH}: if the referenced file
+	 * doesn't exist, skip the draw entirely and ACK (no pixels touched) instead of
+	 * NACK(FILE_NOT_FOUND). Without this bit, a missing file is still a hard NACK.
+	 */
+	public static final int MISSING_FILE_TOLERANT = 1 << 3;
 }
