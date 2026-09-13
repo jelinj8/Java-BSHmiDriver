@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import cz.bliksoft.hmieink.protocol.AuthLevel;
 import cz.bliksoft.hmieink.protocol.Ble;
 import cz.bliksoft.hmieink.protocol.BleHmiDevice;
 import cz.bliksoft.hmieink.protocol.FileHmiDevice;
@@ -221,18 +220,12 @@ public final class Cli {
 	 * {@code -k}/{@code -K} if given, else none - since without a real
 	 * HANDSHAKE_REQUEST the new pin flags would have no effect at all
 	 * (doc/PROTOCOL.md §5.3: a connection starts at AuthLevel.NONE until it does).
-	 * {@link HmiDevice#handshake(int, String)} itself applies the negotiated
-	 * {@code MAX_CHUNK_SIZE} (§5.2) to the transport, so there's nothing
-	 * BLE-specific left to do here.
+	 * {@link HmiDevice#handshake(String, String)} itself picks the right overload
+	 * and applies the negotiated {@code MAX_CHUNK_SIZE} (§5.2) to the transport, so
+	 * there's nothing BLE-specific left to do here.
 	 */
 	private static void handshake(HmiDevice device, Options opts) throws IOException {
-		if (opts.adminPin != null) {
-			device.handshake(AuthLevel.ADMIN, opts.adminPin);
-		} else if (opts.usagePin != null) {
-			device.handshake(AuthLevel.USAGE, opts.usagePin);
-		} else {
-			device.handshake();
-		}
+		device.handshake(opts.adminPin, opts.usagePin);
 	}
 
 	/**
@@ -242,7 +235,7 @@ public final class Cli {
 	 * ordering guarantee {@link Options}'s own picocli-collected lists can't give.
 	 */
 	private static void processArgs(HmiDevice device, Options opts, String[] args) throws IOException {
-		ScriptRunner runner = new ScriptRunner(device);
+		ScriptRunner runner = new ScriptRunner(device, System.out, opts.adminPin, opts.usagePin);
 		char separator = opts.separator;
 		int i = 0;
 		while (i < args.length) {

@@ -59,6 +59,34 @@ public interface FrameTransport extends Closeable {
 	default void setMaxChunkSize(int maxChunkSize) {
 	}
 
+	/**
+	 * Restores connectivity after the device has (or may have) rebooted on its own
+	 * (e.g. {@code OTA_INSTALL}/{@code OTA_APPLY}/{@code OTA_ROLLBACK}, doc/
+	 * PROTOCOL.md §16) - used by {@link HmiDevice#reconnect}. Default:
+	 * {@link #close()} then {@link #connect()}, correct for a transport whose
+	 * PC-side connection object doesn't survive a device-side reboot on its own
+	 * (BLE's peripheral disconnects; a TCP socket resets).
+	 *
+	 * <p>
+	 * {@code SerialFrameTransport} overrides this to do nothing at all: the CH340
+	 * (or similar) USB-serial bridge chip stays enumerated and the host-side COM
+	 * port stays open across a <em>target</em> reset - it's a separate chip from
+	 * the ESP32 being reset. Closing and reopening the port would be actively
+	 * harmful here, not just redundant: opening it asserts DTR/RTS, which is what
+	 * resets the chip in the first place (see that class's doc) - doing that again
+	 * while the device is sitting in a freshly-booted, not-yet-confirmed
+	 * {@code PENDING_VERIFY} state (§16.4) resets it a second time before
+	 * {@code OTA_CONFIRM} can ever be sent, which ESP-IDF's rollback logic
+	 * correctly (if unhelpfully) treats as a failed boot and reverts - confirmed
+	 * live on real hardware: an OTA that transferred and applied successfully was
+	 * rolled back purely because reconnecting for the post-install confirm
+	 * re-triggered this reset before confirming.
+	 */
+	default void reestablishAfterDeviceReboot() throws IOException {
+		close();
+		connect();
+	}
+
 	boolean isConnected();
 
 	/** Stops the reader and releases the underlying connection. Idempotent. */

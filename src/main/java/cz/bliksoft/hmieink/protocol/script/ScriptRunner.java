@@ -13,12 +13,19 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
+import cz.bliksoft.hmieink.protocol.Color;
+import cz.bliksoft.hmieink.protocol.DrawMode;
+import cz.bliksoft.hmieink.protocol.FontId;
 import cz.bliksoft.hmieink.protocol.Frame;
+import cz.bliksoft.hmieink.protocol.HandshakeCapabilities;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
 import cz.bliksoft.hmieink.protocol.IconSpecCache;
 import cz.bliksoft.hmieink.protocol.OtaHashAlgo;
+import cz.bliksoft.hmieink.protocol.TextAlign;
 import cz.bliksoft.hmieink.protocol.Volume;
+import cz.bliksoft.hmieink.protocol.WriteFlags;
 import cz.bliksoft.hmieink.protocol.sync.FolderSync;
 import cz.bliksoft.hmieink.protocol.sync.SyncMode;
 import cz.bliksoft.hmieink.protocol.sync.SyncResult;
@@ -57,18 +64,28 @@ import cz.bliksoft.hmieink.protocol.text.TextCommandFormat;
  * field as {@code #name} (mirroring {@code @<file>}, see
  * {@link TextCommandFormat}). Requires the {@code common-java-utils} library on
  * the classpath.
- * <li>{@code OTA|@<firmware_file>} - reads the given {@code firmware.bin},
- * SHA-256-hashes it, and installs it via {@link HmiDevice#otaInstall} with
- * {@code APPLY_NOW} set (doc/PROTOCOL.md §16.1) - transfer, hash verification,
- * and the device's own reboot into the new image all happen as part of this one
- * pseudo-command. The {@code @} is the same {@code BYTES}-field file convention
- * as everywhere else (see {@link TextCommandFormat#parseBytesToken}), not
- * OTA-specific syntax. Can take minutes for a multi-hundred-KB image over a
- * slow transport - the timeout scales with image size (see
- * {@code OTA_TIMEOUT_FLOOR_MS}), and a PC-side percentage is printed as it
- * sends (see {@link cz.bliksoft.hmieink.protocol.TransferProgressListener}) -
- * not a protocol-level chunk acknowledgment, just client-side transfer
- * instrumentation.
+ * <li>{@code OTA|@<firmware_file>} - completes the whole install/confirm cycle
+ * (doc/PROTOCOL.md §16) in one command: reads the given {@code firmware.bin},
+ * SHA-256-hashes it, installs it via {@link HmiDevice#otaInstall} with
+ * {@code APPLY_NOW} set, waits out a settle delay and reconnects
+ * ({@link HmiDevice#reconnect}) once the device reboots into the new image,
+ * re-handshakes (access level resets on every new connection/boot, §5.3), and
+ * sends {@code OTA_CONFIRM} - or, if the device is found still running the
+ * previous firmware (an early/crash-triggered rollback beat the reconnect to
+ * it), skips confirming since there is nothing new to confirm. Either way,
+ * draws a compact status banner on the device's own screen (device name,
+ * transport, and the version now actually running) before returning. The
+ * {@code @} is the same {@code BYTES}-field file convention as everywhere else
+ * (see {@link TextCommandFormat#parseBytesToken}), not OTA-specific syntax. Can
+ * take minutes for a multi-hundred-KB image over a slow transport - the
+ * transfer timeout scales with image size (see {@code OTA_TIMEOUT_FLOOR_MS}),
+ * and a PC-side percentage is printed as it sends (see
+ * {@link cz.bliksoft.hmieink.protocol.TransferProgressListener}) - not a
+ * protocol-level chunk acknowledgment, just client-side transfer
+ * instrumentation. A caller wanting more manual control (e.g. its own health
+ * check before confirming) can still send the raw
+ * {@code OTA_INSTALL}/{@code OTA_APPLY}/{@code OTA_CONFIRM}/{@code OTA_ROLLBACK}
+ * commands directly instead of this convenience pseudo-command.
  * </ul>
  *
  * A timed-out {@code WAIT_LOG} throws {@link IOException}, the same as an
@@ -82,14 +99,30 @@ public final class ScriptRunner {
 
 	private final HmiDevice device;
 	private final PrintStream out;
+	private final String adminPin;
+	private final String usagePin;
 
 	public ScriptRunner(HmiDevice device) {
 		this(device, System.out);
 	}
 
 	public ScriptRunner(HmiDevice device, PrintStream out) {
+		this(device, out, null, null);
+	}
+
+	/**
+	 * @param adminPin used only to redo the handshake after {@code OTA}'s
+	 *                 post-reboot reconnect (access level resets on every new
+	 *                 connection/boot, doc/PROTOCOL.md §5.3) - the same PIN(s) the
+	 *                 original connection authenticated with, e.g. {@code Cli}'s
+	 *                 {@code -K}/{@code -k}. Not needed (may be {@code null}) if
+	 *                 scripts never use {@code OTA} on a PIN-protected device.
+	 */
+	public ScriptRunner(HmiDevice device, PrintStream out, String adminPin, String usagePin) {
 		this.device = device;
 		this.out = out;
+		this.adminPin = adminPin;
+		this.usagePin = usagePin;
 	}
 
 	public void runFile(String path, char separator) throws IOException {
@@ -262,6 +295,25 @@ public final class ScriptRunner {
 	 */
 	private static final double OTA_ASSUMED_BYTES_PER_MS = 5.0;
 
+	/**
+	 * Mandatory quiet period before {@code OTA} touches the transport again after
+	 * the install ACK - see {@link HmiDevice#reconnect}'s own doc for why this
+	 * can't just be folded into retry backoff (Serial's DTR-reset-on-connect would
+	 * race the device's own in-progress restart). Matches the already-proven
+	 * {@code OtaManualCheck}/{@code SerialFrameTransport.DEFAULT_RESET_SETTLE_DELAY_MS}
+	 * scale.
+	 */
+	private static final long OTA_REBOOT_SETTLE_MS = 13_000;
+
+	/**
+	 * Overall budget for {@code OTA}'s post-reboot reconnect, after the settle
+	 * delay above.
+	 */
+	private static final long OTA_RECONNECT_TIMEOUT_MS = 60_000;
+
+	/** Gap between reconnect attempts within {@link #OTA_RECONNECT_TIMEOUT_MS}. */
+	private static final long OTA_RECONNECT_RETRY_INTERVAL_MS = 3_000;
+
 	private void runOta(List<String> tokens) throws IOException {
 		if (tokens.size() != 2) {
 			throw new IllegalArgumentException("OTA expects exactly one field: @<path to firmware.bin>, got " + tokens);
@@ -269,6 +321,7 @@ public final class ScriptRunner {
 		byte[] image = TextCommandFormat.parseBytesToken(tokens.get(1));
 		byte[] sha256 = sha256(image);
 		long timeoutMs = Math.max(OTA_TIMEOUT_FLOOR_MS, (long) (image.length / OTA_ASSUMED_BYTES_PER_MS));
+		long previousSlot = otaRunningSlot();
 		out.println("-> OTA " + tokens.get(1) + " (" + image.length + " bytes, SHA-256, APPLY_NOW, timeout=" + timeoutMs
 				+ "ms - local orchestration, not sent to the device as a single command)");
 		long[] lastPercent = { -1 };
@@ -283,6 +336,51 @@ public final class ScriptRunner {
 		});
 		out.println();
 		out.println("<- staged, verified, and applying - device is rebooting into the new firmware");
+
+		out.println("-> waiting " + OTA_REBOOT_SETTLE_MS + "ms for the device to finish rebooting, then "
+				+ "reconnecting to confirm (up to " + OTA_RECONNECT_TIMEOUT_MS + "ms)...");
+		device.reconnect(OTA_REBOOT_SETTLE_MS, OTA_RECONNECT_TIMEOUT_MS, OTA_RECONNECT_RETRY_INTERVAL_MS);
+		HandshakeCapabilities capabilities = device.handshake(adminPin, usagePin);
+		Map<String, Object> status = device.otaStatus();
+		long newSlot = ((Number) status.get("RUNNING_SLOT")).longValue();
+		boolean success = newSlot != previousSlot;
+		if (success) {
+			device.otaConfirm();
+		}
+		drawOtaResultMessage(capabilities, success);
+		if (success) {
+			out.println("<- reconnected and confirmed - update complete, rollback safety net cancelled");
+		} else {
+			out.println("<- reconnected, but the device is still on the previous firmware (slot " + newSlot + ", "
+					+ status.get("RUNNING_VERSION") + ") - the new image never took effect, nothing to confirm");
+		}
+	}
+
+	private long otaRunningSlot() throws IOException {
+		return ((Number) device.otaStatus().get("RUNNING_SLOT")).longValue();
+	}
+
+	/**
+	 * Draws a compact status banner on the device's own screen once {@code OTA} has
+	 * (or hasn't) taken effect - requested directly, "serves as a sample and as a
+	 * tool". Uses the handshake's own reported display width (falls back to an
+	 * unbounded single line if unreported) rather than a hardcoded one, and a
+	 * single {@code DRAW_TEXT} call with embedded {@code \n}s (doc/PROTOCOL.md
+	 * §12.6: "An embedded U+000A (LF) always starts a new line regardless of WRAP")
+	 * instead of several separate commands - the same code works unchanged on a
+	 * smaller/differently-sized screen.
+	 */
+	private void drawOtaResultMessage(HandshakeCapabilities capabilities, boolean success) throws IOException {
+		int width = Math.max(0, capabilities.getDisplayWidthPx());
+		String transport = device.getCommandClient().getTransport().getClass().getSimpleName().replace("FrameTransport",
+				"");
+		String deviceName = capabilities.getDeviceName() != null ? capabilities.getDeviceName() : "device";
+		String version = capabilities.getFirmwareVersion() != null ? capabilities.getFirmwareVersion()
+				: "unknown version";
+		String message = (success ? "OTA update complete" : "OTA rolled back") + "\n" + deviceName + " via " + transport
+				+ "\n" + version;
+		device.drawText(0, 0, width, FontId.EMBEDDED_CLASSIC, Color.BLACK, Color.WHITE, DrawMode.REPLACE,
+				TextAlign.CENTER, true, WriteFlags.REFRESH_NOW | WriteFlags.REFRESH_FULL, message);
 	}
 
 	private static byte[] sha256(byte[] data) throws IOException {

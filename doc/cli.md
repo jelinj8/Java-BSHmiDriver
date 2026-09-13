@@ -261,9 +261,9 @@ DRAW_IMAGE|10|10|REPLACE|REFRESH_NOW|SD|/logo.epi
 
 ### `OTA`
 
-Installs a firmware update in one command - reads the given `firmware.bin`, SHA-256-hashes it, and
-sends it via `OTA_INSTALL` (doc/PROTOCOL.md §16.1) with `APPLY_NOW` set, so the device verifies the
-hash, writes it to the inactive OTA partition, and reboots into it as part of this one line:
+Completes the whole install/confirm cycle (doc/PROTOCOL.md §16) in one command - reads the given
+`firmware.bin`, SHA-256-hashes it, and sends it via `OTA_INSTALL` with `APPLY_NOW` set, so the device
+verifies the hash, writes it to the inactive OTA partition, and reboots into it:
 
 ```
 OTA|@<firmware_file>
@@ -273,21 +273,26 @@ The `@` is the same `BYTES`-field file convention used everywhere else (`FILE_UP
 etc.) - not OTA-specific syntax; `#<name>` (an `ICONSPEC`-cached blob) or a literal token would also
 resolve, though neither makes sense for a firmware image in practice.
 
-A firmware image can be hundreds of KB to a few MB, so this can take minutes over a slow transport
-(Serial at 115200 baud, or BLE with its per-packet ACK overhead) - the timeout scales with image
-size rather than using a fixed value, and the CLI prints a live `sending... N%` line as it goes
-(PC-side transfer progress only - `OTA_INSTALL` is one logical frame on the wire, doc/PROTOCOL.md
-§16, so this isn't a protocol-level per-chunk acknowledgment). After the reboot, the device comes
-back up on the new image
-with `OTA_STATUS_RESPONSE.PENDING_VERIFICATION=1` until an explicit `OTA_CONFIRM` cancels the
-firmware's own auto-rollback safety net (doc/PROTOCOL.md §16.4) - `OTA` itself only installs and
-applies; confirming (or rolling back) the new firmware is a separate step, e.g.:
+A firmware image can be hundreds of KB to a few MB, so the install can take minutes over a slow
+transport (Serial at 115200 baud, or BLE with its per-packet ACK overhead) - the transfer timeout
+scales with image size rather than using a fixed value, and the CLI prints a live `sending... N%`
+line as it goes (PC-side transfer progress only - `OTA_INSTALL` is one logical frame on the wire,
+doc/PROTOCOL.md §16, so this isn't a protocol-level per-chunk acknowledgment).
 
-```
-OTA|@./firmware.bin
-SLEEP|13000
-OTA_CONFIRM
-```
+After the install, `OTA` waits for the device to finish rebooting, reconnects (retrying for up to a
+minute - WiFi re-association and BLE re-advertising can both take a while), and re-handshakes (access
+level resets on every new connection/boot, §5.3, so any `-k`/`-K` PIN given on the original connection
+is re-applied automatically). If the new image is now running, it sends `OTA_CONFIRM`, cancelling the
+firmware's own auto-rollback safety net (§16.4); if the device is instead found still running the
+*previous* firmware (an early/crash-triggered rollback beat the reconnect to it), nothing is confirmed
+- there's nothing new to confirm. Either way, `OTA` finishes by drawing a compact status banner on the
+device's own screen (device name, transport, and the version now actually running), so someone
+standing at the device can see the outcome too, not just the PC console.
+
+A caller wanting more manual control (e.g. its own health check before confirming, rather than the
+automatic "did the running version change" check `OTA` uses) can send the raw
+`OTA_INSTALL`/`OTA_APPLY`/`OTA_CONFIRM`/`OTA_ROLLBACK` commands directly instead of this convenience
+pseudo-command.
 
 **Example:**
 ```bash

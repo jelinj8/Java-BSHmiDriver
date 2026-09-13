@@ -1,6 +1,8 @@
 package cz.bliksoft.hmieink.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,5 +55,29 @@ class HmiDeviceTest {
 		assertEquals(CommandId.PAUSE, entries.get(1).commandId);
 		assertEquals("piped", new String(entries.get(2).payload, java.nio.charset.StandardCharsets.UTF_8));
 		assertEquals("footer", new String(entries.get(3).payload, java.nio.charset.StandardCharsets.UTF_8));
+	}
+
+	@Test
+	void reconnectRetriesUntilConnectSucceeds() throws IOException {
+		FakeFrameTransport transport = new FakeFrameTransport();
+		transport.failConnectTimes(2);
+		HmiDevice device = new HmiDevice(transport);
+
+		device.reconnect(0, 5_000, 10);
+
+		assertEquals(3, transport.getConnectAttempts(), "2 failures + 1 success");
+		assertTrue(device.isConnected());
+	}
+
+	@Test
+	void reconnectThrowsTheLastFailureAfterTimingOut() {
+		FakeFrameTransport transport = new FakeFrameTransport();
+		transport.failConnectTimes(Integer.MAX_VALUE); // never succeeds
+		HmiDevice device = new HmiDevice(transport);
+
+		IOException thrown = assertThrows(IOException.class, () -> device.reconnect(0, 100, 20));
+
+		assertTrue(thrown.getMessage().contains("timed out reconnecting"), thrown.getMessage());
+		assertTrue(thrown.getCause() instanceof IOException, "should carry the last connect() failure as cause");
 	}
 }

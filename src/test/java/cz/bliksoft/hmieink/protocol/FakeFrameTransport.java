@@ -1,5 +1,6 @@
 package cz.bliksoft.hmieink.protocol;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -19,9 +20,24 @@ final class FakeFrameTransport implements FrameTransport {
 	private FrameListener listener;
 	private boolean connected;
 	private Function<Frame, Frame> responder = request -> null; // no response by default
+	private int connectFailuresRemaining;
+	private int connectAttempts;
 
 	List<Frame> getSent() {
 		return sent;
+	}
+
+	/**
+	 * Makes the next {@code times} {@link #connect()} calls throw
+	 * {@link IOException} before succeeding - for exercising retry logic (e.g.
+	 * {@link HmiDevice#reconnect}) without any real I/O.
+	 */
+	void failConnectTimes(int times) {
+		this.connectFailuresRemaining = times;
+	}
+
+	int getConnectAttempts() {
+		return connectAttempts;
 	}
 
 	/**
@@ -43,7 +59,12 @@ final class FakeFrameTransport implements FrameTransport {
 	}
 
 	@Override
-	public void connect() {
+	public void connect() throws IOException {
+		connectAttempts++;
+		if (connectFailuresRemaining > 0) {
+			connectFailuresRemaining--;
+			throw new IOException("simulated connect failure");
+		}
 		connected = true;
 	}
 

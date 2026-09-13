@@ -60,6 +60,56 @@ public class HmiDevice implements Closeable {
 		commandClient.close();
 	}
 
+	/**
+	 * Reconnects after a device-initiated reboot (e.g. {@code OTA_INSTALL}/
+	 * {@code OTA_APPLY}/{@code OTA_ROLLBACK}, doc/PROTOCOL.md §16), which can take
+	 * anywhere from a few seconds (BLE re-advertising) to well over ten (WiFi
+	 * re-association) before the device is reachable again.
+	 *
+	 * <p>
+	 * Sleeps {@code settleMillis} first, before touching the transport at all -
+	 * giving the device a quiet period to actually finish rebooting before this
+	 * does anything at all. What "reconnecting" even means is then left to
+	 * {@link FrameTransport#reestablishAfterDeviceReboot()} - see its own doc:
+	 * BLE/TCP genuinely need to re-establish a dropped connection, but Serial must
+	 * NOT close/reopen the port (that resets the chip a second time, which -
+	 * confirmed on real hardware - can trip the device's own not-yet-confirmed
+	 * rollback safety net before {@code OTA_CONFIRM} is ever sent). Retries every
+	 * {@code retryIntervalMillis} until
+	 * {@link FrameTransport#reestablishAfterDeviceReboot()} succeeds or
+	 * {@code timeoutMillis} (measured from after the settle sleep) elapses.
+	 *
+	 * @throws IOException the last failure, if none of the attempts succeeded in
+	 *                     time
+	 */
+	public void reconnect(long settleMillis, long timeoutMillis, long retryIntervalMillis) throws IOException {
+		sleepUninterruptibly(settleMillis);
+		FrameTransport transport = commandClient.getTransport();
+		long deadline = System.currentTimeMillis() + timeoutMillis;
+		IOException lastFailure;
+		do {
+			try {
+				transport.reestablishAfterDeviceReboot();
+				return;
+			} catch (IOException e) {
+				lastFailure = e;
+			}
+			sleepUninterruptibly(Math.min(retryIntervalMillis, Math.max(0, deadline - System.currentTimeMillis())));
+		} while (System.currentTimeMillis() < deadline);
+		throw new IOException("timed out reconnecting after " + timeoutMillis + "ms", lastFailure);
+	}
+
+	private static void sleepUninterruptibly(long millis) {
+		if (millis <= 0) {
+			return;
+		}
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+	}
+
 	/** Escape hatch for anything not (yet) wrapped by a typed method below. */
 	public CommandClient getCommandClient() {
 		return commandClient;
@@ -125,6 +175,24 @@ public class HmiDevice implements Closeable {
 		HandshakeCapabilities capabilities = HandshakeCapabilities.parse(response.getPayload());
 		commandClient.getTransport().setMaxChunkSize(capabilities.getMaxChunkSize());
 		return capabilities;
+	}
+
+	/**
+	 * Convenience overload choosing {@link AuthLevel#ADMIN} if {@code adminPin} is
+	 * given, else {@link AuthLevel#USAGE} if {@code usagePin} is given, else no PIN
+	 * at all - the same selection {@code Cli}'s {@code -K}/{@code -k} flags apply,
+	 * reusable by anything that needs to redo the same handshake later (e.g. after
+	 * {@link #reconnect}, since access level resets on every new connection/boot,
+	 * doc/PROTOCOL.md §5.3).
+	 */
+	public HandshakeCapabilities handshake(String adminPin, String usagePin) throws IOException {
+		if (adminPin != null) {
+			return handshake(AuthLevel.ADMIN, adminPin);
+		} else if (usagePin != null) {
+			return handshake(AuthLevel.USAGE, usagePin);
+		} else {
+			return handshake();
+		}
 	}
 
 	public void logMessage(byte[] marker) throws IOException {

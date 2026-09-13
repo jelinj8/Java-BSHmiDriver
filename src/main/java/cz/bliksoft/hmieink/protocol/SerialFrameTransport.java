@@ -128,6 +128,20 @@ public final class SerialFrameTransport extends AbstractStreamFrameTransport {
 	}
 
 	/**
+	 * A no-op: unlike BLE/TCP, this connection doesn't need re-establishing after
+	 * the device reboots on its own - the CH340 (or similar) USB-serial bridge is a
+	 * separate chip from the ESP32 being reset, so it stays enumerated and this COM
+	 * port stays open throughout. Deliberately does NOT close/reopen the port:
+	 * doing so would assert DTR/RTS again (see this class's doc - that's what
+	 * resets the chip in the first place), forcing a second, PC-initiated reset.
+	 * See {@link FrameTransport#reestablishAfterDeviceReboot()}'s own doc for why
+	 * that's actively harmful, not just redundant, confirmed on real hardware.
+	 */
+	@Override
+	public void reestablishAfterDeviceReboot() {
+	}
+
+	/**
 	 * A few repeated {@link Frame#MAGIC} bytes - long enough to reliably trigger
 	 * UART wake hardware.
 	 */
