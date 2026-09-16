@@ -126,13 +126,31 @@ public final class HmiUtils {
 
 		public static List<BleDeviceResult> scan(BleAdapter adapter, long timeoutMs) throws BleException {
 			return BleUtils.scan(adapter,
-					new ScanFilter().withServiceUuid(cz.bliksoft.hmieink.protocol.Ble.SERVICE_UUID), timeoutMs, null);
+					new ScanFilter().withServiceUuid(cz.bliksoft.hmieink.protocol.Ble.SERVICE_UUID), timeoutMs);
 		}
 
 		public static List<BleDeviceResult> find(BleAdapter adapter, String nameOrAddress, long timeoutMs)
 				throws BleException {
 			return BleUtils.find(adapter,
 					new ScanFilter().withServiceUuid(cz.bliksoft.hmieink.protocol.Ble.SERVICE_UUID), nameOrAddress,
+					timeoutMs);
+		}
+
+		/**
+		 * Scans for a device whose address or name is an <em>exact</em>
+		 * (case-insensitive) match for {@code addressOrName}, stopping as soon as it's
+		 * found instead of always waiting out {@code timeoutMs} - see
+		 * {@link ScanFilter#withAddress}/{@link ScanFilter#withName}. Unlike the old
+		 * {@code BleUtils.scan(..., match)} this replaces, {@link BleAdapter} itself
+		 * guarantees only a genuine exact match is ever returned, so this can no longer
+		 * fall back to unrelated devices on a timeout the way {@link #resolveExact}'s
+		 * doc describes.
+		 */
+		public static List<BleDeviceResult> scanExact(BleAdapter adapter, String addressOrName, long timeoutMs)
+				throws BleException {
+			return BleUtils.scan(adapter,
+					new ScanFilter().withServiceUuid(cz.bliksoft.hmieink.protocol.Ble.SERVICE_UUID)
+							.withAddress(addressOrName).withName(addressOrName),
 					timeoutMs);
 		}
 
@@ -206,21 +224,26 @@ public final class HmiUtils {
 		}
 
 		/**
-		 * Narrows a {@code BleUtils.scan(..., match)} result down to every device that
-		 * is an exact address/name match for {@code selector} - unlike
-		 * {@link #resolveDevice}, which always narrows to exactly one device, this can
-		 * legitimately return several (e.g. multiple devices sharing a name).
+		 * Narrows a scan result down to every device that is an exact address/name
+		 * match for {@code selector} - unlike {@link #resolveDevice}, which always
+		 * narrows to exactly one device, this can legitimately return several (e.g.
+		 * multiple devices sharing a name).
 		 *
 		 * <p>
-		 * {@code scan(..., match)} only stops early and returns just the match when
-		 * that peripheral is actually seen before the scan timeout elapses; if the
-		 * timeout is reached first, it silently falls back to returning every other
-		 * device it happened to discover along the way, instead of an empty list. An
-		 * exact-match selector must never let a command run against a device other than
-		 * the one requested (confirmed on real hardware: an OTA targeting
-		 * {@code =30:ED:A0:A5:A3:65} was instead sent to an unrelated device that just
-		 * happened to answer the scan first), so re-filter here and fail closed if the
-		 * exact match isn't present.
+		 * Historical note: this originally existed to re-verify results from the old
+		 * {@code BleUtils.scan(..., match)} early-stop parameter, which was only an
+		 * optimization, not a guaranteed hard filter - on a timeout it silently fell
+		 * back to returning every other device it happened to discover along the way,
+		 * instead of an empty list. An exact-match selector must never let a command
+		 * run against a device other than the one requested (confirmed on real
+		 * hardware: an OTA targeting {@code =30:ED:A0:A5:A3:65} was instead sent to an
+		 * unrelated device that just happened to answer the scan first), so this
+		 * re-filtered and failed closed if the exact match wasn't present.
+		 * {@link #scanExact} now enforces that same hard filter natively (via
+		 * {@link ScanFilter#withAddress}/{@link ScanFilter#withName}), so this method
+		 * is no longer required for correctness against a fresh scan - it remains
+		 * useful as a defense-in-depth re-check, or for narrowing an already-fetched
+		 * device list without rescanning.
 		 *
 		 * @param found         the raw result of {@code BleUtils.scan(..., selector)}
 		 * @param selector      the exact address or name that was requested

@@ -42,7 +42,7 @@
 		<maven.compiler.release>8</maven.compiler.release>
 		<junit.version>5.10.2</junit.version>
 		<jserialcomm.version>2.11.4</jserialcomm.version>
-		<bstoolbox-ble.version>0.4.0</bstoolbox-ble.version>
+		<bstoolbox-ble.version>0.6.0</bstoolbox-ble.version>
 		<bstoolbox.version>0.8</bstoolbox.version>
 		<picocli.version>4.7.6</picocli.version>
 	</properties>
@@ -61,8 +61,10 @@
 
 		<!-- BLE transport, doc/PROTOCOL.md §3.1 / §19. "provided" per the project brief (CLAUDE.md):
 			the consuming application supplies this sibling library on its own runtime classpath
-			only if it actually uses BleFrameTransport. On Maven Central as of 0.3.0 (Windows
-			scan/discovery fixes, connection-quality API). -->
+			only if it actually uses BleFrameTransport. Pinned to a local 0.5.0-SNAPSHOT install
+			(not the published 0.4.0) for the unified ScanFilter address/name matching API
+			(withAddress/withName/withMatchingAddress/withMatchingName) - install it locally first:
+			`cd ../BSToolbox-BLE && mvn install`. Move back to a published release once it ships. -->
 		<dependency>
 			<groupId>cz.bliksoft.java</groupId>
 			<artifactId>common-java-utils-ble</artifactId>

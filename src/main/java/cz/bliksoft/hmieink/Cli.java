@@ -185,8 +185,8 @@ public final class Cli {
 				List<BleDeviceResult> found;
 				if (opts.address.startsWith("=")) {
 					String exact = opts.address.substring(1);
-					found = HmiUtils.Ble.resolveExact(HmiUtils.Ble.scan(adapter, BLE_SCAN_TIMEOUT_MS), exact,
-							BLE_SCAN_TIMEOUT_MS);
+					found = HmiUtils.Ble.resolveExact(HmiUtils.Ble.scanExact(adapter, exact, BLE_SCAN_TIMEOUT_MS),
+							exact, BLE_SCAN_TIMEOUT_MS);
 				} else {
 					found = HmiUtils.Ble.find(adapter, opts.address, BLE_SCAN_TIMEOUT_MS);
 				}

@@ -55,11 +55,13 @@ public final class DrawPrimitivesBleManualCheck {
 			System.out.println(
 					"Scanning for service " + Ble.SERVICE_UUID + (target != null ? " matching \"" + target + "\"" : "")
 							+ " (up to " + SCAN_TIMEOUT_MS + " ms)...");
-			adapter.scan(new ScanFilter().withServiceUuid(Ble.SERVICE_UUID), SCAN_TIMEOUT_MS, (address, name, rssi) -> {
+			ScanFilter filter = new ScanFilter().withServiceUuid(Ble.SERVICE_UUID);
+			if (target != null) {
+				filter.withMatchingAddress(target).withMatchingName(target);
+			}
+			adapter.scan(filter, SCAN_TIMEOUT_MS, (address, name, rssi) -> {
 				System.out.println("Found: " + address + " name=" + name + " rssi=" + rssi);
-				boolean matches = target == null || address.toUpperCase(java.util.Locale.ROOT).contains(target)
-						|| (name != null && name.toUpperCase(java.util.Locale.ROOT).contains(target));
-				if (matches && addressRef.compareAndSet(null, address)) {
+				if (addressRef.compareAndSet(null, address)) {
 					nameRef.set(name);
 				}
 			});

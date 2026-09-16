@@ -181,8 +181,8 @@ public final class BleFrameTransport extends AbstractStreamFrameTransport {
 		BleAdapter fresh = null;
 		try {
 			fresh = new BleAdapter();
-			BleUtils.scan(fresh, new ScanFilter().withServiceUuid(Ble.SERVICE_UUID), RECONNECT_SCAN_TIMEOUT_MS,
-					address);
+			BleUtils.scan(fresh, new ScanFilter().withServiceUuid(Ble.SERVICE_UUID).withAddress(address),
+					RECONNECT_SCAN_TIMEOUT_MS);
 		} catch (BleException e) {
 			if (fresh != null) {
 				fresh.close();
