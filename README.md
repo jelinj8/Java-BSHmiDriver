@@ -22,7 +22,12 @@ independent implementations of that one spec, kept in lockstep by convention.
 - `SerialFrameTransport` — UART, via `jSerialComm` (provided dependency).
 - `TcpFrameTransport` — WiFi/TCP, raw sockets.
 - `BleFrameTransport` — Bluetooth Low Energy, built on the sibling `BSToolbox-BLE` library
-  (provided dependency, not required unless you use BLE).
+  (provided dependency, not required unless you use BLE). Optional programmatic pairing: pass a
+  PIN (the 3-arg `BleFrameTransport`/`BleHmiDevice` constructors, `HmiUtils.Ble`'s PIN-taking
+  overloads, or the CLI's `-P`/`--ble-pair-pin`) for a board/firmware build that requires BLE
+  bonding — the reference CrowPanel board doesn't, so this is opt-in with no default PIN. Windows
+  and Linux only; **not possible on macOS** (CoreBluetooth has no public pairing API, a permanent
+  platform restriction) — pair such a device through macOS's own Bluetooth settings first.
 - `FileFrameTransport` — writes commands to a `.macro` file instead of a live device; used by
   `Cli`'s file-output mode and for hand-authoring macros.
 

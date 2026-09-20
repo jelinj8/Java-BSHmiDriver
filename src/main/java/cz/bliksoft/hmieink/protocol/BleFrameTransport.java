@@ -42,6 +42,21 @@ import cz.bliksoft.javautils.ble.utils.BleUtils;
  * reader thread drains the connected {@link PipedInputStream} through the same
  * {@link FrameStreamReader} logic TCP/Serial use. Outgoing frames are
  * fragmented by {@link BleOutputStream}.
+ *
+ * <p>
+ * Programmatic pairing (no OS pairing prompt) is available but opt-in - unlike
+ * MeshCore radios, this HMI device family has no established default BLE PIN,
+ * and the reference CrowPanel board doesn't require bonding at all (an
+ * unencrypted GATT service). Pass a PIN to
+ * {@link #BleFrameTransport(BleAdapter, String, String)} only for a board/
+ * firmware build that does require it; {@code null}/blank (the plain two-arg
+ * constructor) skips pairing entirely, matching this class's original
+ * behavior. See {@code cz.bliksoft.java:common-java-utils-ble}'s own
+ * "Programmatic pairing" feature (Windows and Linux; not possible on macOS,
+ * a CoreBluetooth limitation, not this library's). A supplied PIN is only ever
+ * used once, on the very first {@link #connect()} - not on a later
+ * {@link #reestablishAfterDeviceReboot()} - since a previously-paired device
+ * stays bonded at the OS level across a mere device reboot.
  */
 public final class BleFrameTransport extends AbstractStreamFrameTransport {
 
@@ -67,7 +82,16 @@ public final class BleFrameTransport extends AbstractStreamFrameTransport {
 	private volatile BlePeripheral peripheral;
 	private volatile BleOutputStream txStream;
 
+	// Consumed (nulled) the first time connect() succeeds - see class doc and
+	// the BleAdapter,String,String constructor.
+	private volatile String pairPin;
+
 	/**
+	 * Equivalent to {@link #BleFrameTransport(BleAdapter, String, String)} with a
+	 * {@code null} PIN - never attempts pairing. This is the right choice for a
+	 * device known not to require BLE bonding (e.g. the reference CrowPanel
+	 * board).
+	 *
 	 * @param adapter caller-owned; must have already discovered {@code address} via
 	 *                {@link BleAdapter#scan} (see class doc). Not closed by this
 	 *                class unless a later {@link #reestablishAfterDeviceReboot()}
@@ -76,15 +100,47 @@ public final class BleFrameTransport extends AbstractStreamFrameTransport {
 	 *                own scan.
 	 */
 	public BleFrameTransport(BleAdapter adapter, String address) {
+		this(adapter, address, null);
+	}
+
+	/**
+	 * @param adapter caller-owned; must have already discovered {@code address} via
+	 *                {@link BleAdapter#scan} (see class doc). Not closed by this
+	 *                class unless a later {@link #reestablishAfterDeviceReboot()}
+	 *                supersedes it with a fresh, self-owned one.
+	 * @param address the peripheral's BLE address, as reported by {@code adapter}'s
+	 *                own scan.
+	 * @param pairPin PIN to pair with automatically right after connecting (see
+	 *                class doc), or {@code null}/blank to not attempt pairing at
+	 *                all.
+	 */
+	public BleFrameTransport(BleAdapter adapter, String address, String pairPin) {
 		this.adapter = adapter;
 		this.address = address;
+		this.pairPin = pairPin;
 	}
 
 	@Override
 	public void connect() throws IOException {
+		String pinToUse = pairPin;
+		pairPin = null;
 		try {
 			BlePeripheral p = adapter.getPeripheral(address);
 			p.connect();
+			if (pinToUse != null && !pinToUse.trim().isEmpty()) {
+				// Best-effort, not fatal: an already-paired device (possible if the caller
+				// re-supplies a PIN, or the user paired manually before) typically errors
+				// here rather than silently succeeding again - that's expected, not a real
+				// failure. If the device genuinely still needs bonding and this didn't
+				// establish it, discoverServices()/subscribe() below fail instead.
+				try {
+					p.pair(pinToUse);
+				} catch (BleException e) {
+					// Logged at the call site's discretion - this class has no logger of its
+					// own (see AbstractStreamFrameTransport); swallow and continue, matching
+					// the "opt-in, best-effort" contract in the class doc.
+				}
+			}
 			p.discoverServices();
 
 			PipedOutputStream rxFeed = new PipedOutputStream();

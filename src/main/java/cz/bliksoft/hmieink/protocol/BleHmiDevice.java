@@ -13,7 +13,17 @@ import cz.bliksoft.javautils.ble.BleAdapter;
  */
 public final class BleHmiDevice extends HmiDevice {
 
+	/** Equivalent to {@link #BleHmiDevice(BleAdapter, String, String)} with a {@code null} PIN - never attempts pairing. */
 	public BleHmiDevice(BleAdapter adapter, String address) {
-		super(new BleFrameTransport(adapter, address));
+		this(adapter, address, null);
+	}
+
+	/**
+	 * @param pairPin PIN to pair with automatically right after connecting, or
+	 *                {@code null}/blank to not attempt pairing at all - see
+	 *                {@link BleFrameTransport}'s class doc.
+	 */
+	public BleHmiDevice(BleAdapter adapter, String address, String pairPin) {
+		super(new BleFrameTransport(adapter, address, pairPin));
 	}
 }

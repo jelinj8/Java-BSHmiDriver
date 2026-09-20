@@ -70,6 +70,12 @@ public final class Cli {
 						+ "(admin implies usage - mutually exclusive with -k)")
 		String adminPin;
 
+		@CommandLine.Option(names = { "-P",
+				"--ble-pair-pin" }, description = "pair (bond) with the BLE device using this PIN right after connecting, "
+						+ "before the handshake (ble transport only) - only needed for a board/firmware build that "
+						+ "requires BLE bonding (the reference CrowPanel board doesn't); omit to skip pairing entirely")
+		String blePairPin;
+
 		@CommandLine.Option(names = { "-f",
 				"--file" }, description = "read commands from FILE, one per line (also accepts SLEEP|ms, "
 						+ "WAIT_LOG|ms[|marker], ICONSPEC|name|spec, and OTA|@firmware.bin, see ScriptRunner) - "
@@ -195,7 +201,7 @@ public final class Cli {
 					System.out.println("Connecting to " + target.getAddress()
 							+ (target.getName() != null ? " (" + target.getName() + ")" : "") + "...");
 					try (BleHmiDevice device = HmiUtils.Ble.connectAndHandshake(adapter, target.getAddress(),
-							opts.adminPin, opts.usagePin)) {
+							opts.blePairPin, opts.adminPin, opts.usagePin)) {
 						processArgs(device, opts, args);
 					}
 				}

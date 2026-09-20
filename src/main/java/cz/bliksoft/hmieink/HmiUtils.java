@@ -271,15 +271,40 @@ public final class HmiUtils {
 			return matches;
 		}
 
+		/** Never attempts BLE pairing - see {@link #connect(BleAdapter, String, String)} to opt in. */
 		public static BleHmiDevice connect(BleAdapter adapter, String address) throws IOException {
-			BleHmiDevice device = new BleHmiDevice(adapter, address);
+			return connect(adapter, address, null);
+		}
+
+		/**
+		 * @param pairPin PIN to pair (bond) with automatically right after
+		 *                connecting - only needed for a board/firmware build that
+		 *                requires BLE bonding (the reference CrowPanel board doesn't);
+		 *                {@code null}/blank skips pairing entirely. See
+		 *                {@link BleFrameTransport}'s class doc.
+		 */
+		public static BleHmiDevice connect(BleAdapter adapter, String address, String pairPin) throws IOException {
+			BleHmiDevice device = new BleHmiDevice(adapter, address, pairPin);
 			device.connect();
 			return device;
 		}
 
+		/** Never attempts BLE pairing - see {@link #connectAndHandshake(BleAdapter, String, String, String, String)} to opt in. */
 		public static BleHmiDevice connectAndHandshake(BleAdapter adapter, String address, String adminPin,
 				String usagePin) throws IOException {
 			BleHmiDevice device = connect(adapter, address);
+			handshake(device, adminPin, usagePin);
+			return device;
+		}
+
+		/**
+		 * @param pairPin PIN to pair (bond) with automatically right after
+		 *                connecting, before the handshake - see
+		 *                {@link #connect(BleAdapter, String, String)}.
+		 */
+		public static BleHmiDevice connectAndHandshake(BleAdapter adapter, String address, String pairPin,
+				String adminPin, String usagePin) throws IOException {
+			BleHmiDevice device = connect(adapter, address, pairPin);
 			handshake(device, adminPin, usagePin);
 			return device;
 		}
