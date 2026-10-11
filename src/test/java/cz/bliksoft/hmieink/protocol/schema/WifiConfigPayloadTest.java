@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Arrays;
+
 import org.junit.jupiter.api.Test;
 
 import cz.bliksoft.hmieink.protocol.CommandId;
@@ -23,6 +25,18 @@ class WifiConfigPayloadTest {
 		assertArrayEquals(new byte[] { 3, 'n', 'e', 't', 2, 'p', 'w', 0x03 }, dhcp.payload);
 		assertThrows(IllegalArgumentException.class,
 				() -> TextCommandFormat.parse("SET_WIFI_CONFIG|net|pw|PERSIST|192.168.20.94", '|'));
+	}
+
+	@Test
+	void statusStaticIpIsOptionalForOlderFirmware() {
+		byte[] older = { 1, 1, 3, 'n', 'e', 't', (byte) 192, (byte) 168, 20, 94 };
+		byte[] current = Arrays.copyOf(older, older.length + 1);
+		current[older.length] = 1;
+		assertEquals("WIFI_STATUS_RESPONSE|1|1|net|192.168.20.94",
+				TextCommandFormat.format(CommandId.WIFI_STATUS_RESPONSE, older, '|'));
+		assertEquals("WIFI_STATUS_RESPONSE|1|1|net|192.168.20.94|1",
+				TextCommandFormat.format(CommandId.WIFI_STATUS_RESPONSE, current, '|'));
+		assertEquals(1L, PayloadCodec.decode(CommandSchema.byName("WIFI_STATUS_RESPONSE"), current).get("STATIC_IP"));
 	}
 
 	@Test

@@ -52,7 +52,10 @@ import java.util.Map;
  * {@code MODE=REGION}), a {@link #presentIfFlag} field only when an earlier
  * bitmask field has a given bit set (e.g. {@code SET_WIFI_CONFIG}'s static IP
  * addresses, present only with {@code FLAGS.STATIC_IP}) - skipped on
- * encode/decode and in the text format otherwise.
+ * encode/decode and in the text format otherwise. An {@link #optional} field at
+ * the end of a payload was appended in a later protocol version: decoding
+ * leaves it out when the payload ends before it (an older device), encoding
+ * when the caller didn't supply it.
  */
 public final class FieldSpec {
 
@@ -69,10 +72,12 @@ public final class FieldSpec {
 	public final long presentIfValue;
 	/** Non-zero: {@link #presentIfValue} is ignored, these bits must be set. */
 	public final long presentIfMask;
+	/** Trailing field added later - see the class doc. */
+	public final boolean optional;
 
 	private FieldSpec(String name, FieldKind kind, LengthPrefix lengthPrefix, String lengthField,
 			Class<?>[] enumClasses, boolean isBitmask, boolean derived, DerivedValueFn deriveFn,
-			String presentIfField, long presentIfValue, long presentIfMask) {
+			String presentIfField, long presentIfValue, long presentIfMask, boolean optional) {
 		this.name = name;
 		this.kind = kind;
 		this.lengthPrefix = lengthPrefix;
@@ -84,11 +89,12 @@ public final class FieldSpec {
 		this.presentIfField = presentIfField;
 		this.presentIfValue = presentIfValue;
 		this.presentIfMask = presentIfMask;
+		this.optional = optional;
 	}
 
 	private FieldSpec(String name, FieldKind kind, LengthPrefix lengthPrefix, String lengthField,
 			Class<?>[] enumClasses, boolean isBitmask, boolean derived, DerivedValueFn deriveFn) {
-		this(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, null, 0, 0);
+		this(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, null, 0, 0, false);
 	}
 
 	public static FieldSpec u8(String name) {
@@ -157,7 +163,7 @@ public final class FieldSpec {
 	 */
 	public FieldSpec derived(DerivedValueFn fn) {
 		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, true, fn, presentIfField,
-				presentIfValue, presentIfMask);
+				presentIfValue, presentIfMask, optional);
 	}
 
 	/**
@@ -166,7 +172,7 @@ public final class FieldSpec {
 	 */
 	public FieldSpec presentIf(String field, long value) {
 		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, field,
-				value, 0);
+				value, 0, optional);
 	}
 
 	/**
@@ -175,7 +181,16 @@ public final class FieldSpec {
 	 */
 	public FieldSpec presentIfFlag(String field, long bit) {
 		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, field,
-				0, bit);
+				0, bit, optional);
+	}
+
+	/**
+	 * Returns a copy of this field marked {@link #optional} - a trailing field
+	 * appended in a later protocol version, see the class doc.
+	 */
+	public FieldSpec optional() {
+		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn,
+				presentIfField, presentIfValue, presentIfMask, true);
 	}
 
 	/**

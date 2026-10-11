@@ -212,7 +212,7 @@ public final class CommandSchema {
 						ipv4("DNS").presentIfFlag("FLAGS", WifiConfigFlags.STATIC_IP)),
 				spec(CommandId.WIFI_STATUS_REQUEST, "WIFI_STATUS_REQUEST", true),
 				spec(CommandId.WIFI_STATUS_RESPONSE, "WIFI_STATUS_RESPONSE", false, u8("ENABLED"), u8("CONNECTED"),
-						string("SSID", LengthPrefix.U8), ipv4("IP_ADDRESS")),
+						string("SSID", LengthPrefix.U8), ipv4("IP_ADDRESS"), u8("STATIC_IP").optional()),
 				spec(CommandId.SET_WIFI_ENABLED, "SET_WIFI_ENABLED", true, u8("ENABLED"),
 						u8Flags("FLAGS", ConfigFlags.class)),
 				spec(CommandId.SET_BLE_ENABLED, "SET_BLE_ENABLED", true, u8("ENABLED"),
