@@ -133,8 +133,13 @@ public final class CommandSchema {
 						u16le("WIDTH"), u16le("HEIGHT"), u32le("DECODED_LEN"),
 						u32le("ENCODED_LEN").derived(f -> (long) ((byte[]) f.get("DATA")).length),
 						bytesRef("DATA", "ENCODED_LEN")),
+				// X/Y/WIDTH/HEIGHT only for MODE=REGION (§8) - the firmware rejects a FULL request
+				// carrying them with BAD_PARAMETERS.
 				spec(CommandId.READ_SCREEN, "READ_SCREEN", true, u8Enum("SOURCE", ReadScreenSource.class),
-						u8Enum("MODE", ReadScreenMode.class), u16le("X"), u16le("Y"), u16le("WIDTH"), u16le("HEIGHT")),
+						u8Enum("MODE", ReadScreenMode.class), u16le("X").presentIf("MODE", ReadScreenMode.REGION),
+						u16le("Y").presentIf("MODE", ReadScreenMode.REGION),
+						u16le("WIDTH").presentIf("MODE", ReadScreenMode.REGION),
+						u16le("HEIGHT").presentIf("MODE", ReadScreenMode.REGION)),
 				spec(CommandId.SCREEN_DATA, "SCREEN_DATA", false, u8Enum("ENCODING", Encoding.class), u16le("X"),
 						u16le("Y"), u16le("WIDTH"), u16le("HEIGHT"), u32le("DECODED_LEN"), u32le("ENCODED_LEN"),
 						bytesRef("DATA", "ENCODED_LEN")),

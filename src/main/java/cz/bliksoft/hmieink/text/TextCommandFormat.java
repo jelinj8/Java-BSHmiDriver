@@ -83,7 +83,7 @@ public final class TextCommandFormat {
 		Map<String, Object> fields = new LinkedHashMap<>();
 		int tokenIndex = 1;
 		for (FieldSpec f : spec.fields) {
-			if (f.derived) {
+			if (f.derived || !f.isPresent(fields)) {
 				continue;
 			}
 			if (f.kind == FieldKind.REPEATED_STRING_TAIL) {
@@ -120,6 +120,9 @@ public final class TextCommandFormat {
 		Map<String, Object> fields = PayloadCodec.decode(spec, payload);
 		StringBuilder sb = new StringBuilder(spec.name);
 		for (FieldSpec f : spec.fields) {
+			if (!fields.containsKey(f.name)) {
+				continue; // a presentIf field that isn't present
+			}
 			Object value = fields.get(f.name);
 			appendField(sb, separator, f, value);
 		}

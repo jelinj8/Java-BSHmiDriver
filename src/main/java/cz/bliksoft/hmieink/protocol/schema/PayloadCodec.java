@@ -37,6 +37,9 @@ public final class PayloadCodec {
 		Map<String, Object> combined = new LinkedHashMap<>(suppliedFields);
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		for (FieldSpec f : spec.fields) {
+			if (!f.isPresent(combined)) {
+				continue;
+			}
 			Object value;
 			if (f.derived) {
 				value = f.deriveFn.compute(combined);
@@ -56,7 +59,9 @@ public final class PayloadCodec {
 		LinkedHashMap<String, Object> result = new LinkedHashMap<>();
 		ByteBuffer buf = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN);
 		for (FieldSpec f : spec.fields) {
-			result.put(f.name, readField(buf, result, f));
+			if (f.isPresent(result)) {
+				result.put(f.name, readField(buf, result, f));
+			}
 		}
 		return result;
 	}

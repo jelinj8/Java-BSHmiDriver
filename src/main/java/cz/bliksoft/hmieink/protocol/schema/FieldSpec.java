@@ -1,5 +1,7 @@
 package cz.bliksoft.hmieink.protocol.schema;
 
+import java.util.Map;
+
 /**
  * One field of a {@link CommandSpec}, in wire order. Field values passed
  * to/from {@link PayloadCodec} are: {@link Long} for
@@ -43,6 +45,12 @@ package cz.bliksoft.hmieink.protocol.schema;
  * {@code PowerMode.MODE} (which shares its class with the unrelated bitmask
  * constant {@code PowerMode.FLAG_KEEP_BLE_CONNECTABLE}) can't accidentally
  * resolve to it.
+ *
+ * <p>
+ * A {@link #presentIf} field is on the wire only when an earlier field holds a
+ * given value (e.g. {@code READ_SCREEN}'s X/Y/WIDTH/HEIGHT, present only for
+ * {@code MODE=REGION}) - skipped on encode/decode and in the text format
+ * otherwise.
  */
 public final class FieldSpec {
 
@@ -54,9 +62,13 @@ public final class FieldSpec {
 	public final boolean isBitmask;
 	public final boolean derived;
 	public final DerivedValueFn deriveFn;
+	/** Name of the earlier field this one depends on, or {@code null}. */
+	public final String presentIfField;
+	public final long presentIfValue;
 
 	private FieldSpec(String name, FieldKind kind, LengthPrefix lengthPrefix, String lengthField,
-			Class<?>[] enumClasses, boolean isBitmask, boolean derived, DerivedValueFn deriveFn) {
+			Class<?>[] enumClasses, boolean isBitmask, boolean derived, DerivedValueFn deriveFn,
+			String presentIfField, long presentIfValue) {
 		this.name = name;
 		this.kind = kind;
 		this.lengthPrefix = lengthPrefix;
@@ -65,6 +77,13 @@ public final class FieldSpec {
 		this.isBitmask = isBitmask;
 		this.derived = derived;
 		this.deriveFn = deriveFn;
+		this.presentIfField = presentIfField;
+		this.presentIfValue = presentIfValue;
+	}
+
+	private FieldSpec(String name, FieldKind kind, LengthPrefix lengthPrefix, String lengthField,
+			Class<?>[] enumClasses, boolean isBitmask, boolean derived, DerivedValueFn deriveFn) {
+		this(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, null, 0);
 	}
 
 	public static FieldSpec u8(String name) {
@@ -132,6 +151,27 @@ public final class FieldSpec {
 	 * on encode.
 	 */
 	public FieldSpec derived(DerivedValueFn fn) {
-		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, true, fn);
+		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, true, fn, presentIfField,
+				presentIfValue);
+	}
+
+	/**
+	 * Returns a copy of this field that is present only when the earlier field
+	 * {@code field} holds {@code value} - see the class doc.
+	 */
+	public FieldSpec presentIf(String field, long value) {
+		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, field,
+				value);
+	}
+
+	/**
+	 * Whether this field is present, given the values of the fields before it.
+	 */
+	public boolean isPresent(Map<String, Object> earlierFields) {
+		if (presentIfField == null) {
+			return true;
+		}
+		Object v = earlierFields.get(presentIfField);
+		return v instanceof Long && (Long) v == presentIfValue;
 	}
 }

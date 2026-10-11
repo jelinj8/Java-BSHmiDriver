@@ -303,7 +303,10 @@ pseudo-command.
 
 See the firmware protocol specification (`doc/PROTOCOL.md` in the `firmware-BSHMIEinkDevice` repository) for complete command details. The following are the main command categories:
 
-### Drawing Commands (§7)
+Queries are named `*_REQUEST` and answered by the matching `*_RESPONSE`; fields are listed in
+the protocol spec (e.g. `STORAGE_INFO_REQUEST|INTERNAL`, volume `SD`/`INTERNAL`/`PSRAM`).
+
+### Drawing Commands (§12)
 - `FAST_CLEAR` - Quick full-screen clear
 - `DRAW_LINE`, `DRAW_RECT`, `DRAW_CIRCLE` - Basic primitives
 - `DRAW_TEXT` - Text rendering with custom fonts
@@ -312,24 +315,29 @@ See the firmware protocol specification (`doc/PROTOCOL.md` in the `firmware-BSHM
 - `CLEAR_REGION`, `FILL_IMAGE` - Region operations
 - `REFRESH` - Trigger display refresh
 
-### Storage Commands (§8)
-- `FILE_LIST`, `FILE_DOWNLOAD`, `FILE_UPLOAD`, `FILE_DELETE`
+### Screen readback (§8)
+- `READ_SCREEN` - answered by `SCREEN_DATA`; `READ_SCREEN|WORKING_BUFFER|FULL` for the whole
+  screen, `READ_SCREEN|PANEL|REGION|X|Y|WIDTH|HEIGHT` for a part (X/Y/WIDTH/HEIGHT only with
+  `REGION`)
+
+### Storage Commands (§14)
+- `FILE_LIST_REQUEST`, `FILE_DOWNLOAD_REQUEST`, `FILE_UPLOAD`, `FILE_DELETE`
 - `FILE_COPY`, `FILE_RENAME`
-- `STORAGE_INFO` - Query storage capacity
+- `STORAGE_INFO_REQUEST` - Query storage capacity
 
-### GPIO Commands (§9)
-- `GPIO_CONFIGURE`, `GPIO_WRITE`, `GPIO_READ`
-- `GPIO_EVENT`, `GPIO_PLAY_PATTERN`
+### GPIO Commands (§15)
+- `GPIO_CONFIGURE`, `GPIO_WRITE`, `GPIO_READ_REQUEST`, `GPIO_PLAY_PATTERN`
+- `GPIO_EVENT` - sent by the device (device → PC), not a command
 
-### OTA Commands (§11)
-- `OTA_INSTALL`, `OTA_APPLY`, `OTA_STATUS`
+### OTA Commands (§16)
+- `OTA_INSTALL`, `OTA_APPLY`, `OTA_STATUS_REQUEST`
 - `OTA_CONFIRM`, `OTA_ROLLBACK`
 
-### Configuration Commands (§6)
+### Configuration Commands (§13)
 - `SET_WIFI_CONFIG`, `SET_BLE_PIN`, `SET_DEVICE_NAME`
 - `SET_USAGE_PIN`, `SET_ADMIN_PIN`
 
-### Macro Commands (§12)
+### Macro Commands (§18)
 - `RECORD_MACRO`, `SAVE_MACRO`, `PLAY_MACRO`
 - `PAUSE`
 
