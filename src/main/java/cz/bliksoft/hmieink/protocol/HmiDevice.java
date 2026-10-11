@@ -432,9 +432,26 @@ public class HmiDevice implements Closeable {
 		send(CommandId.CONFIG_RESTORE, fields("CONFIG_VERSION", (long) configVersion, "TLV_DATA", tlvData));
 	}
 
+	/** DHCP - with {@code persist}, also clears a stored static IP setup. */
 	public void setWifiConfig(String ssid, String password, boolean persist, boolean connectNow) throws IOException {
 		long flags = (persist ? ConfigFlags.PERSIST : 0) | (connectNow ? WifiConfigFlags.CONNECT_NOW : 0);
 		send(CommandId.SET_WIFI_CONFIG, fields("SSID", ssid, "PASSWORD", password, "FLAGS", flags));
+	}
+
+	/**
+	 * Static IPv4 setup instead of DHCP ({@link WifiConfigFlags#STATIC_IP}) - each
+	 * address as 4 octets A.B.C.D; {@code dns} may be all zeros (none).
+	 */
+	public void setWifiConfig(String ssid, String password, boolean persist, boolean connectNow, byte[] ip,
+			byte[] netmask, byte[] gateway, byte[] dns) throws IOException {
+		long flags = (persist ? ConfigFlags.PERSIST : 0) | (connectNow ? WifiConfigFlags.CONNECT_NOW : 0)
+				| WifiConfigFlags.STATIC_IP;
+		Map<String, Object> f = fields("SSID", ssid, "PASSWORD", password, "FLAGS", flags);
+		f.put("IP", ip);
+		f.put("NETMASK", netmask);
+		f.put("GATEWAY", gateway);
+		f.put("DNS", dns);
+		send(CommandId.SET_WIFI_CONFIG, f);
 	}
 
 	public Map<String, Object> wifiStatus() throws IOException {

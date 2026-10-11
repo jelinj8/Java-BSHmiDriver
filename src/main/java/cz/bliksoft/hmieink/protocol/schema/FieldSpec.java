@@ -49,8 +49,10 @@ import java.util.Map;
  * <p>
  * A {@link #presentIf} field is on the wire only when an earlier field holds a
  * given value (e.g. {@code READ_SCREEN}'s X/Y/WIDTH/HEIGHT, present only for
- * {@code MODE=REGION}) - skipped on encode/decode and in the text format
- * otherwise.
+ * {@code MODE=REGION}), a {@link #presentIfFlag} field only when an earlier
+ * bitmask field has a given bit set (e.g. {@code SET_WIFI_CONFIG}'s static IP
+ * addresses, present only with {@code FLAGS.STATIC_IP}) - skipped on
+ * encode/decode and in the text format otherwise.
  */
 public final class FieldSpec {
 
@@ -65,10 +67,12 @@ public final class FieldSpec {
 	/** Name of the earlier field this one depends on, or {@code null}. */
 	public final String presentIfField;
 	public final long presentIfValue;
+	/** Non-zero: {@link #presentIfValue} is ignored, these bits must be set. */
+	public final long presentIfMask;
 
 	private FieldSpec(String name, FieldKind kind, LengthPrefix lengthPrefix, String lengthField,
 			Class<?>[] enumClasses, boolean isBitmask, boolean derived, DerivedValueFn deriveFn,
-			String presentIfField, long presentIfValue) {
+			String presentIfField, long presentIfValue, long presentIfMask) {
 		this.name = name;
 		this.kind = kind;
 		this.lengthPrefix = lengthPrefix;
@@ -79,11 +83,12 @@ public final class FieldSpec {
 		this.deriveFn = deriveFn;
 		this.presentIfField = presentIfField;
 		this.presentIfValue = presentIfValue;
+		this.presentIfMask = presentIfMask;
 	}
 
 	private FieldSpec(String name, FieldKind kind, LengthPrefix lengthPrefix, String lengthField,
 			Class<?>[] enumClasses, boolean isBitmask, boolean derived, DerivedValueFn deriveFn) {
-		this(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, null, 0);
+		this(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, null, 0, 0);
 	}
 
 	public static FieldSpec u8(String name) {
@@ -152,7 +157,7 @@ public final class FieldSpec {
 	 */
 	public FieldSpec derived(DerivedValueFn fn) {
 		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, true, fn, presentIfField,
-				presentIfValue);
+				presentIfValue, presentIfMask);
 	}
 
 	/**
@@ -161,7 +166,16 @@ public final class FieldSpec {
 	 */
 	public FieldSpec presentIf(String field, long value) {
 		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, field,
-				value);
+				value, 0);
+	}
+
+	/**
+	 * Returns a copy of this field that is present only when the earlier bitmask
+	 * field {@code field} has {@code bit} set - see the class doc.
+	 */
+	public FieldSpec presentIfFlag(String field, long bit) {
+		return new FieldSpec(name, kind, lengthPrefix, lengthField, enumClasses, isBitmask, derived, deriveFn, field,
+				0, bit);
 	}
 
 	/**
@@ -172,6 +186,9 @@ public final class FieldSpec {
 			return true;
 		}
 		Object v = earlierFields.get(presentIfField);
-		return v instanceof Long && (Long) v == presentIfValue;
+		if (!(v instanceof Long)) {
+			return false;
+		}
+		return presentIfMask != 0 ? ((Long) v & presentIfMask) != 0 : (Long) v == presentIfValue;
 	}
 }
