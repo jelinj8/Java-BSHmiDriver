@@ -149,6 +149,10 @@ public final class BleFrameTransport extends AbstractStreamFrameTransport {
 			p.subscribe(Ble.SERVICE_UUID, Ble.CHARACTERISTIC_UUID, (charUuid, value) -> {
 				try {
 					rxFeed.write(value);
+					// Wakes the reader at once - PipedInputStream.read() otherwise only re-checks for
+					// data once a second (its wait(1000) loop; write() doesn't notify), which cost
+					// about 1 s per response over BLE, confirmed by timestamped CLI runs.
+					rxFeed.flush();
 				} catch (IOException e) {
 					// Pipe closed or (per the sizing note above, only in a pathological case) full
 					// -
