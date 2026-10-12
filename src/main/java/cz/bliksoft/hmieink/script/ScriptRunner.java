@@ -1,5 +1,6 @@
 package cz.bliksoft.hmieink.script;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +16,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.imageio.ImageIO;
+
 import cz.bliksoft.hmieink.image.IconSpecCache;
+import cz.bliksoft.hmieink.image.ScreenImageCodec;
 import cz.bliksoft.hmieink.protocol.Color;
 import cz.bliksoft.hmieink.protocol.DrawMode;
 import cz.bliksoft.hmieink.protocol.FontId;
@@ -23,6 +27,8 @@ import cz.bliksoft.hmieink.protocol.Frame;
 import cz.bliksoft.hmieink.protocol.HandshakeCapabilities;
 import cz.bliksoft.hmieink.protocol.HmiDevice;
 import cz.bliksoft.hmieink.protocol.OtaHashAlgo;
+import cz.bliksoft.hmieink.protocol.ReadScreenMode;
+import cz.bliksoft.hmieink.protocol.ReadScreenSource;
 import cz.bliksoft.hmieink.protocol.TextAlign;
 import cz.bliksoft.hmieink.protocol.Volume;
 import cz.bliksoft.hmieink.protocol.WriteFlags;
@@ -86,6 +92,11 @@ import cz.bliksoft.hmieink.text.TextCommandFormat;
  * check before confirming) can still send the raw
  * {@code OTA_INSTALL}/{@code OTA_APPLY}/{@code OTA_CONFIRM}/{@code OTA_ROLLBACK}
  * commands directly instead of this convenience pseudo-command.
+ * <li>{@code SCREENSHOT|<source: PANEL|WORKING_BUFFER>|<file>[|X|Y|WIDTH|HEIGHT]}
+ * - sends {@code READ_SCREEN} (the whole screen, or the given region) and saves
+ * the {@code SCREEN_DATA} as a black-and-white image (see
+ * {@link ScreenImageCodec}), in the format named by the file's extension
+ * ({@code .png} unless it's another one {@link ImageIO} writes).
  * </ul>
  *
  * A timed-out {@code WAIT_LOG} throws {@link IOException}, the same as an
@@ -164,6 +175,9 @@ public final class ScriptRunner {
 			return;
 		case "OTA":
 			runOta(tokens);
+			return;
+		case "SCREENSHOT":
+			runScreenshot(tokens);
 			return;
 		default:
 			Frame response = device.sendText(line, separator);
@@ -277,6 +291,43 @@ public final class ScriptRunner {
 		} catch (UnsupportedOperationException e) {
 			throw new IOException(e.getMessage(), e);
 		}
+	}
+
+	private void runScreenshot(List<String> tokens) throws IOException {
+		if (tokens.size() != 3 && tokens.size() != 7) {
+			throw new IllegalArgumentException(
+					"SCREENSHOT expects source(PANEL|WORKING_BUFFER)|file[|X|Y|WIDTH|HEIGHT], got " + tokens);
+		}
+		int source;
+		switch (tokens.get(1).toUpperCase(Locale.ROOT)) {
+		case "PANEL":
+			source = ReadScreenSource.PANEL;
+			break;
+		case "WORKING_BUFFER":
+			source = ReadScreenSource.WORKING_BUFFER;
+			break;
+		default:
+			throw new IllegalArgumentException(
+					"SCREENSHOT: unknown source '" + tokens.get(1) + "' (expected PANEL|WORKING_BUFFER)");
+		}
+		Path file = Paths.get(tokens.get(2));
+		boolean region = tokens.size() == 7;
+		int[] rect = new int[4];
+		for (int i = 0; region && i < 4; i++) {
+			rect[i] = (int) parseLong(tokens.get(3 + i), "SCREENSHOT");
+		}
+		out.println("-> SCREENSHOT " + tokens.get(1).toUpperCase(Locale.ROOT)
+				+ (region ? " " + rect[2] + "x" + rect[3] + "@" + rect[0] + "," + rect[1] : "") + " -> " + file
+				+ " (READ_SCREEN, saved locally)");
+		BufferedImage image = device.readScreenImage(source, region ? ReadScreenMode.REGION : ReadScreenMode.FULL,
+				rect[0], rect[1], rect[2], rect[3]);
+		String name = file.getFileName().toString();
+		int dot = name.lastIndexOf('.');
+		String format = dot < 0 ? "png" : name.substring(dot + 1).toLowerCase(Locale.ROOT);
+		if (!ImageIO.write(image, format, file.toFile())) {
+			throw new IOException("SCREENSHOT: no image writer for '" + format + "' - use e.g. .png");
+		}
+		out.println("<- saved " + image.getWidth() + "x" + image.getHeight());
 	}
 
 	/**

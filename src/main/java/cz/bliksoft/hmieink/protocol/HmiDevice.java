@@ -1,5 +1,6 @@
 package cz.bliksoft.hmieink.protocol;
 
+import java.awt.image.BufferedImage;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 import cz.bliksoft.hmieink.image.EpiImageCodec;
 import cz.bliksoft.hmieink.image.IconSpecCache;
+import cz.bliksoft.hmieink.image.ScreenImageCodec;
 import cz.bliksoft.hmieink.protocol.schema.CommandSchema;
 import cz.bliksoft.hmieink.protocol.schema.PayloadCodec;
 import cz.bliksoft.hmieink.text.TextCommandFormat;
@@ -242,6 +244,15 @@ public class HmiDevice implements Closeable {
 
 	public Map<String, Object> readScreenFull(int source) throws IOException {
 		return readScreen(source, ReadScreenMode.FULL, 0, 0, 0, 0);
+	}
+
+	/**
+	 * {@link #readScreen} decoded into a black-and-white image (see
+	 * {@link ScreenImageCodec}) - a screenshot of the panel or the working buffer.
+	 */
+	public BufferedImage readScreenImage(int source, int mode, int x, int y, int width, int height)
+			throws IOException {
+		return ScreenImageCodec.decode(readScreen(source, mode, x, y, width, height));
 	}
 
 	public void clearArtifacts(int cycles, int flags) throws IOException {

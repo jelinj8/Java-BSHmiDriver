@@ -78,13 +78,15 @@ public final class Cli {
 
 		@CommandLine.Option(names = { "-f",
 				"--file" }, description = "read commands from FILE, one per line (also accepts SLEEP|ms, "
-						+ "WAIT_LOG|ms[|marker], ICONSPEC|name|spec, and OTA|@firmware.bin, see ScriptRunner) - "
+						+ "WAIT_LOG|ms[|marker], ICONSPEC|name|spec, OTA|@firmware.bin, and SCREENSHOT|source|file.png, see "
+						+ "ScriptRunner) - "
 						+ "repeatable, order-sensitive with -c/-p")
 		List<String> files = new ArrayList<>();
 
 		@CommandLine.Option(names = { "-c",
 				"--command" }, description = "send one inline command, or SLEEP|ms / WAIT_LOG|ms[|marker] / "
-						+ "ICONSPEC|name|spec / OTA|@firmware.bin (local only, see ScriptRunner) - repeatable, "
+						+ "ICONSPEC|name|spec / OTA|@firmware.bin / SCREENSHOT|source|file.png (local only, see ScriptRunner) - "
+						+ "repeatable, "
 						+ "order-sensitive with -f/-p")
 		List<String> commands = new ArrayList<>();
 

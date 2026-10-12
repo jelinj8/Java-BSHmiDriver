@@ -294,6 +294,28 @@ automatic "did the running version change" check `OTA` uses) can send the raw
 `OTA_INSTALL`/`OTA_APPLY`/`OTA_CONFIRM`/`OTA_ROLLBACK` commands directly instead of this convenience
 pseudo-command.
 
+### `SCREENSHOT`
+
+Reads the screen back (`READ_SCREEN`, doc/PROTOCOL.md §8) and saves it as a black-and-white image:
+
+```
+SCREENSHOT|<source: PANEL|WORKING_BUFFER>|<file>
+SCREENSHOT|<source>|<file>|<X>|<Y>|<WIDTH>|<HEIGHT>    # just a region
+```
+
+`PANEL` is what the e-ink panel currently shows, `WORKING_BUFFER` what has been drawn so far,
+including draws not refreshed yet (`FLAGS` without `REFRESH_NOW`) - comparing the two shows what a
+`REFRESH` would still change. The file's extension picks the format (`.png`, or another one Java's
+`ImageIO` writes, e.g. `.bmp`).
+
+**Example:**
+```bash
+./hmi-cli.sh -t ble -a "=30:ED:A0:38:51:DD" -c "SCREENSHOT|PANEL|panel.png"
+```
+
+From Java, `HmiDevice.readScreenImage(...)` returns the same image as a `BufferedImage`, and
+`ScreenImageCodec.decode(...)` turns a `SCREEN_DATA` response already in hand into one.
+
 **Example:**
 ```bash
 ./hmi-cli.sh -t ble -a "=30:ED:A0:A5:A3:65" -c "OTA|@./firmware.bin"
